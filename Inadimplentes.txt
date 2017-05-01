@@ -1,0 +1,36 @@
+Inicio
+testeaaaaaaaaaaa
+Fim
+Inicio
+1
+Fim
+Inicio
+6000
+Fim
+Inicio
+10
+Fim
+Inicio
+'EDIMILSON FERNANDES'
+,'tESTE'
+,'tESTE'
+,'tESTE2'
+,'tESTE2'
+,'tESTE'
+Fim
+Inicio
+1
+Fim
+Inicio
+2
+Fim
+Inicio
+'Duplicata'
+,'Nota de Crédito'
+,'Boleto Bancario'
+,'Cheque'
+,'Carteira'
+Fim
+Inicio
+01:02
+Fim

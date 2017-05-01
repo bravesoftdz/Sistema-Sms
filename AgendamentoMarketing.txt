@@ -1,0 +1,172 @@
+17
+10
+Mensagem
+Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto
+Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto
+Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto
+Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto
+Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto
+Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto
+teste
+Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto;Você comprou louça com a Simples Sms agora queremos fechar os metais com você venha conferir nossa variedade e ganhe um grande desconto
+TESTE EMAIL
+Data
+
+
+
+
+
+
+
+
+
+Hora
+12:00
+00:03
+00:38
+22:39
+00:02
+09:38
+10:39
+10:52
+14:21
+Enviar Enviados
+Sim
+Sim
+Sim
+Sim
+Sim
+Sim
+Sim
+Sim
+Sim
+Limitar
+Não
+Não
+Não
+Não
+Não
+Sim
+Sim
+Não
+Não
+Max Sms
+10
+10
+10
+10
+10
+4
+4
+10
+10
+Filtrar
+Não
+Não
+Não
+Não
+Não
+Não
+Não
+Não
+Não
+Filtro
+
+
+
+
+
+
+
+
+
+Parametro Filtro
+
+
+
+
+
+
+
+
+
+Parametro Filtro2
+
+
+
+
+
+
+
+
+
+Parametro Filtro3
+
+
+
+
+
+
+
+
+
+Status
+Ativo
+Ativo
+Ativo
+Ativo
+Ativo
+Ativo
+Ativo
+Ativo
+Ativo
+Ultimo Envio
+22/03/2017
+20/03/2017
+13/03/2017
+19/03/2017
+20/03/2017
+22/03/2017
+22/03/2017
+Sem
+22/03/2017
+Email
+
+
+
+
+
+
+1637660
+
+178
+Tipo
+Sms
+Sms
+Sms
+Sms
+Sms
+Sms
+Email
+Sms
+Email
+Envio Externo
+
+Sim
+Sim
+Não
+Sim
+Sim
+Sim
+Sim
+Sim
+Filtro Externo
+
+Todos
+Todos
+
+88
+Todos
+Todos
+Todos
+Todos

@@ -1,0 +1,6 @@
+ckEnviaEmailAvisoVencimento
+ckUsarMesmaListaNegraAvisoVencimento
+ckEnviaEmailCobranca
+ckAtivaSatisfacao
+ckReativaAtivados
+ckCopiaSmsResposta

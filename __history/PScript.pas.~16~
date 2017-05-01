@@ -1,0 +1,156 @@
+unit PScript;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, StdCtrls, Grids, DBGrids, Buttons, ExtCtrls, DB, ADODB;
+
+type
+  TSms = class(TForm)
+    mmScript: TMemo;
+    dbResultado: TDBGrid;
+    btExecutar: TBitBtn;
+    edInstancia: TLabeledEdit;
+    edBancoDeDados: TLabeledEdit;
+    edUsuario: TLabeledEdit;
+    edSenha: TLabeledEdit;
+    edCnpj: TLabeledEdit;
+    qrySql: TADOQuery;
+    dbPrincipal: TADOConnection;
+    dsSql: TDataSource;
+    procedure FormShow(Sender: TObject);
+    procedure btExecutarClick(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  Sms: TSms;
+  Linha1,
+  Linha2 ,
+  Linha3  ,
+  Linha4   ,
+  Linha5    ,
+  Linha6     ,
+  Linha7      : String;
+
+implementation
+
+{$R *.dfm}
+
+
+function Criptografia(mStr, mChave: string): string;
+var
+i, TamanhoString, pos, PosLetra, TamanhoChave: Integer;
+begin
+  Result := mStr;
+  TamanhoString := Length(mStr);
+  TamanhoChave := Length(mChave);
+  for i := 1 to TamanhoString do
+  begin
+    pos := (i mod TamanhoChave);
+    if pos = 0 then
+    pos := TamanhoChave;
+    posLetra := ord(Result[i]) xor ord(mChave[pos]);
+    if posLetra = 0 then
+    posLetra := ord(Result[i]);
+    Result[i] := chr(posLetra);
+  end;
+end;
+
+
+Function ConectaBancoDeDados(Usuario , Senha , Banco , Instancia :String) : Boolean;
+Var StringConexao : String;
+begin
+  {try
+    BaixarDllNecessarias;
+  Except
+
+  end;     }
+  StringConexao := 'Provider=SQLOLEDB.1;Password='+Senha+';Persist Security Info=True; ' +
+                   'User ID='+Usuario+';Initial Catalog='+Banco+'; ' +
+                   'Data Source='+Instancia+'; ' +
+                   'Use Procedure for Prepare=1;Auto Translate=True;Packet Size=4096; '+
+                   'Workstation ID=GPHER161;Use Encryption ' +
+                   'for Data=False;Tag with column collation when possible=False;';
+  Sms.dbPrincipal.Connected := False;
+  Sms.dbPrincipal.ConnectionString:=StringConexao;
+  Sms.dbPrincipal.Connected:= True;
+
+end;
+
+
+
+
+
+Procedure LerConfiguracao(NomeArquivo : string);
+var
+  Arq: TextFile;
+  Caminho : String;
+begin
+  Caminho := ExtractFilePath(Application.ExeName);
+  Linha1 := '';
+  Linha2 := '';
+  Linha3 := '';
+  Linha4 := '';
+  Linha5 := '';
+  Linha6 := '';
+  Linha7 := '';
+  if FileExists(Caminho+NomeArquivo) then
+  begin
+    AssignFile(arq,Caminho+NomeArquivo);
+    Reset(Arq);
+    ReadLn(arq, Linha1);
+    ReadLn(arq, Linha2);
+    ReadLn(arq, Linha3);
+    ReadLn(arq, Linha4);
+    ReadLn(arq, Linha5);
+    ReadLn(arq, Linha6);
+    ReadLn(arq, Linha7);
+    CloseFile(arq);
+  end else
+  Begin
+    Linha1 := '';
+    Linha2 := '';
+    Linha3 := '';
+    Linha4 := '';
+    Linha5 := '';
+    Linha6 := '';
+    Linha7 := '';
+  end;
+
+end;
+
+
+procedure ReativarConexaoBancoDeDados;
+begin
+  LerConfiguracao('ConfiguracaoConexao.ini');
+  with Sms do
+  begin
+    edInstancia.Text :=Linha1;
+    edBancoDeDados.Text :=Linha2;
+    edUsuario.Text :=Linha3 ;
+    edSenha.Text :=Criptografia(Linha4,'236') ;
+    edCnpj.Text := Linha6;
+  end;
+end;
+
+
+
+
+procedure TSms.btExecutarClick(Sender: TObject);
+begin
+  qrySql.Close;
+  qrySql.SQL.Text := mmScript.Text;
+  qrySql.Open;
+end;
+
+procedure TSms.FormShow(Sender: TObject);
+begin
+  ConectaBancoDeDados(edUsuario.Text,edSenha.Text,edBancoDeDados.Text,edInstancia.Text);
+end;
+
+end.

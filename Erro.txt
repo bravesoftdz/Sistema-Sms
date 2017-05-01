@@ -1,0 +1,3 @@
+Could not convert variant of type (UnicodeString) into type (Double)
+SQL Error: Unknown column 'Mensagem' in 'field list'
+qryResultadoPesquisaSatisfacao: Field 'TotalRespostas' not found

@@ -1,0 +1,1062 @@
+object dmuPrincipal: TdmuPrincipal
+  OldCreateOrder = False
+  Height = 510
+  Width = 732
+  object dbPrincipal: TADOConnection
+    ConnectionString = 
+      'Provider=SQLOLEDB.1;Password=sysadm;Persist Security Info=True;U' +
+      'ser ID=sa;Initial Catalog=teste;Data Source=SNOWAY\SQLSERVER3'
+    KeepConnection = False
+    LoginPrompt = False
+    Provider = 'SQLOLEDB.1'
+    Left = 48
+    Top = 24
+  end
+  object qryRelClientes: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <
+      item
+        Name = 'clientes'
+        Attributes = [paSigned]
+        DataType = ftInteger
+        Precision = 10
+        Size = 4
+        Value = Null
+      end>
+    SQL.Strings = (
+      'select oid,NOME,RAZSOC from CLIENTECAD'
+      'where oid not in (:clientes)'
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      '')
+    Left = 48
+    Top = 72
+    object qryRelClientesoid: TIntegerField
+      FieldName = 'oid'
+    end
+    object qryRelClientesNOME: TStringField
+      FieldName = 'NOME'
+      Size = 254
+    end
+    object qryRelClientesRAZSOC: TStringField
+      FieldName = 'RAZSOC'
+      Size = 254
+    end
+  end
+  object qryCelulares: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <
+      item
+        Name = 'Tipo'
+        Attributes = [paSigned]
+        DataType = ftInteger
+        Precision = 10
+        Size = 4
+        Value = Null
+      end
+      item
+        Name = 'Cliente'
+        Attributes = [paSigned]
+        DataType = ftInteger
+        Precision = 10
+        Size = 4
+        Value = Null
+      end>
+    SQL.Strings = (
+      'select '
+      'COMUNICACAO_V.ritem as IdCliente,'
+      '---COMUNICACAO_V.nitem as Nome,'
+      
+        'Replace(Replace(REPLACE(REPLACE(replace(VALOR,'#39'-'#39','#39#39'),'#39'('#39','#39#39' ),'#39 +
+        ')'#39','#39#39'),'#39' '#39','#39#39'),'#39'.'#39','#39#39') as Celular '
+      '--,ENDERECO_V.NCIDADE as Cidade'
+      ',SUBSTRING(Cidade_v.ddd,2,2) as DDD'
+      ''
+      ''
+      'from COMUNICACAO_v'
+      'join ENDERECO_V on ENDERECO_v.RITEM=COMUNICACAO_V.RITEM'
+      'join Cidade_v on Cidade_v.oid=Endereco_v.rCidade'
+      'where RTIPO=:TIPO'
+      'and COMUNICACAO_v.RITEM=:CLIENTE'
+      
+        'and Replace(Replace(REPLACE(REPLACE(replace(VALOR,'#39'-'#39','#39#39'),'#39'('#39','#39#39 +
+        ' ),'#39')'#39','#39#39'),'#39' '#39','#39#39'),'#39'.'#39','#39#39') <> '#39#39)
+    Left = 48
+    Top = 120
+    object qryCelularesCelular: TStringField
+      FieldName = 'Celular'
+      ReadOnly = True
+      Size = 8000
+    end
+    object qryCelularesDDD: TStringField
+      FieldName = 'DDD'
+      ReadOnly = True
+      Size = 2
+    end
+    object qryCelularesIdCliente: TIntegerField
+      FieldName = 'IdCliente'
+    end
+  end
+  object qryInadimplentes: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <
+      item
+        Name = 'Tipo'
+        Attributes = [paNullable]
+        DataType = ftString
+        NumericScale = 255
+        Precision = 255
+        Size = 254
+        Value = Null
+      end
+      item
+        Name = 'ListaCliente'
+        Attributes = [paNullable]
+        DataType = ftString
+        NumericScale = 255
+        Precision = 255
+        Size = 254
+        Value = Null
+      end
+      item
+        Name = 'MinDias'
+        Attributes = [paSigned, paNullable]
+        DataType = ftInteger
+        Precision = 10
+        Size = 4
+        Value = Null
+      end
+      item
+        Name = 'MaxDias'
+        Attributes = [paSigned, paNullable]
+        DataType = ftInteger
+        Precision = 10
+        Size = 4
+        Value = Null
+      end
+      item
+        Name = 'ValorMinimo'
+        Attributes = [paSigned, paNullable]
+        DataType = ftBCD
+        NumericScale = 2
+        Precision = 19
+        Size = 19
+        Value = Null
+      end>
+    SQL.Strings = (
+      'select '
+      'RCLIENTE,'
+      'VENCIMENTO,VALORNAMOEDA1-CREDITOACUMULADO as ValorNaMoeda1,'
+      
+        'NSITUACAO,RSITUACAO,NCLIENTE,NTIPO,DATEDIFF(DAY,VENCIMENTO,GETDA' +
+        'TE()) AS Dias,codigo'
+      'from CONTAARECEBER_V'
+      'JOIN FILIALCAD ON CONTAARECEBER_V.REMITENTE=FILIALCAD.OID'
+      'where RSITUACAO=2347'
+      'and VENCIMENTO < GETDATE()'
+      'AND NTIPO IN (:Tipo)'
+      'AND NCLIENTE NOT IN (:ListaCliente)'
+      
+        'and  DATEDIFF(DAY,VENCIMENTO,GETDATE())  >= :MinDias  and  DATED' +
+        'IFF(DAY,VENCIMENTO,GETDATE())   <= :MaxDias'
+      'and VALORNAMOEDA1-CREDITOACUMULADO >:ValorMinimo'
+      ''
+      ''
+      'ORDER BY DATEDIFF(DAY,VENCIMENTO,GETDATE())'
+      ''
+      '')
+    Left = 48
+    Top = 176
+    object qryInadimplentesRCLIENTE: TIntegerField
+      FieldName = 'RCLIENTE'
+    end
+    object qryInadimplentesVENCIMENTO: TDateTimeField
+      FieldName = 'VENCIMENTO'
+    end
+    object qryInadimplentesVALORNAMOEDA1: TBCDField
+      FieldName = 'VALORNAMOEDA1'
+      currency = True
+      Precision = 18
+      Size = 2
+    end
+    object qryInadimplentesNSITUACAO: TStringField
+      FieldName = 'NSITUACAO'
+      Size = 254
+    end
+    object qryInadimplentesRSITUACAO: TIntegerField
+      FieldName = 'RSITUACAO'
+    end
+    object qryInadimplentesNCLIENTE: TStringField
+      FieldName = 'NCLIENTE'
+      Size = 254
+    end
+    object qryInadimplentesNTIPO: TStringField
+      FieldName = 'NTIPO'
+      Size = 254
+    end
+    object qryInadimplentesDias: TIntegerField
+      FieldName = 'Dias'
+      ReadOnly = True
+    end
+    object qryInadimplentescodigo: TStringField
+      FieldName = 'codigo'
+      Size = 254
+    end
+  end
+  object qryEntregas: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <
+      item
+        Name = 'UltimaNota'
+        DataType = ftString
+        NumericScale = 255
+        Precision = 255
+        Size = 13
+        Value = ''
+      end>
+    SQL.Strings = (
+      
+        'select numnota,serie,a.dtemis,a.codclie,Cast(GETDATE()as date),b' +
+        '.NOME,a.Filial'
+      'from NFSAIDACAD a'
+      'join CLIENTECAD b on a.codclie=b.OID'
+      'join COMPLEMENTONFSAIDA c on c.NUMORD=a.numord'
+      'where a.codclie<>7'
+      
+        'and a.dtemis between Cast(GETDATE()  as date) and Cast(GETDATE()' +
+        'as date)'
+      'and dtcancel is null'
+      'and numnota>:UltimaNota'
+      'and serie='#39'1'#39
+      'and CodTran <> '#39#39
+      
+        'and convert(nvarchar(5),Dateadd(MI,10,c.DtEmis),108) < = convert' +
+        '(nvarchar(5),GETDATE(),108)'
+      'and (select COUNT(*) from NFENTRACAD'
+      
+        'where numord=a.numord and NFENTRACAD.serie=a.serie and nfentraca' +
+        'd.dtcancel  is null) = 0'
+      ''
+      ''
+      ''
+      ''
+      '')
+    Left = 48
+    Top = 232
+    object qryEntregasnumnota: TStringField
+      FieldName = 'numnota'
+      FixedChar = True
+      Size = 13
+    end
+    object qryEntregasserie: TStringField
+      FieldName = 'serie'
+      FixedChar = True
+      Size = 3
+    end
+    object qryEntregasdtemis: TDateTimeField
+      FieldName = 'dtemis'
+    end
+    object qryEntregascodclie: TIntegerField
+      FieldName = 'codclie'
+    end
+    object qryEntregasCOLUMN1: TWideStringField
+      FieldName = 'COLUMN1'
+      ReadOnly = True
+      Size = 10
+    end
+    object qryEntregasNOME: TStringField
+      FieldName = 'NOME'
+      Size = 254
+    end
+    object qryEntregasFilial: TStringField
+      FieldName = 'Filial'
+      FixedChar = True
+      Size = 2
+    end
+  end
+  object qryListaNEnviar: TADOQuery
+    Connection = dbPrincipal
+    CommandTimeout = 0
+    Parameters = <>
+    SQL.Strings = (
+      'select oid,NOME,RAZSOC from CLIENTECAD'
+      ''
+      ''
+      'order by Nome')
+    Left = 48
+    Top = 288
+  end
+  object qryRelTipo: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <>
+    SQL.Strings = (
+      'select distinct RTIPO,NTIPO from CONTAARECEBER_V'
+      'order by nTipo')
+    Left = 48
+    Top = 336
+    object qryRelTipoRTIPO: TIntegerField
+      FieldName = 'RTIPO'
+    end
+    object qryRelTipoNTIPO: TStringField
+      FieldName = 'NTIPO'
+      Size = 254
+    end
+  end
+  object qryAniversariantes: TADOQuery
+    Connection = dbPrincipal
+    CommandTimeout = 0
+    Parameters = <
+      item
+        Name = 'Mes'
+        Attributes = [paNullable]
+        DataType = ftString
+        NumericScale = 255
+        Precision = 255
+        Size = 2
+        Value = Null
+      end
+      item
+        Name = 'Dia'
+        Attributes = [paNullable]
+        DataType = ftString
+        NumericScale = 255
+        Precision = 255
+        Size = 2
+        Value = Null
+      end>
+    SQL.Strings = (
+      'select a.NOME,b.DTVALOR,a.OID from CLIENTECAD a'
+      'left join ADITIVO_r b on a.OID=b.RITEM and RDEFINICAO='#39'16353'#39
+      'where CONVERT(VARCHAR(2),Month(b.DTVALOR))=:Mes and '
+      ' CONVERT(VARCHAR(2),Day(b.DTVALOR))=:Dia')
+    Left = 48
+    Top = 392
+    object qryAniversariantesNOME: TStringField
+      FieldName = 'NOME'
+      Size = 254
+    end
+    object qryAniversariantesDTVALOR: TDateTimeField
+      FieldName = 'DTVALOR'
+    end
+    object qryAniversariantesOID: TIntegerField
+      FieldName = 'OID'
+    end
+  end
+  object qryCategoriasCel: TADOQuery
+    Connection = dbPrincipal
+    CommandTimeout = 0
+    Parameters = <>
+    SQL.Strings = (
+      'select Nome,oid  from categoria_v'
+      'where RSUPER='#39'22'#39
+      'and NOME like '#39'%SMS%'#39
+      'or'
+      'NOME LIKE '#39'%CELULAR%'#39
+      'and OID <> 31851')
+    Left = 136
+    Top = 72
+  end
+  object qryCargas: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <
+      item
+        Name = 'UltimaCarga'
+        Attributes = [paSigned, paNullable]
+        DataType = ftInteger
+        Precision = 10
+        Size = 4
+        Value = Null
+      end>
+    SQL.Strings = (
+      
+        'select distinct pedido,a.NUMEROLISTA,c.codclie,c.razaocli,a.Data' +
+        'OrdemSeparacao from ITEMFATURADO a'
+      'join CARGA b on a.NUMEROLISTA=b.NUMEROLISTA'
+      'join PEDICLICAD c on c.numped=a.Pedido'
+      'where b.CODTRAN <> '#39#39
+      'and a.NUMEROLISTA > :UltimaCarga'
+      'ORDER BY a.NUMEROLISTA')
+    Left = 136
+    Top = 136
+    object qryCargaspedido: TIntegerField
+      FieldName = 'pedido'
+    end
+    object qryCargasNUMEROLISTA: TIntegerField
+      FieldName = 'NUMEROLISTA'
+    end
+    object qryCargascodclie: TIntegerField
+      FieldName = 'codclie'
+    end
+    object qryCargasrazaocli: TStringField
+      FieldName = 'razaocli'
+      Size = 254
+    end
+    object qryCargasDataOrdemSeparacao: TDateTimeField
+      FieldName = 'DataOrdemSeparacao'
+    end
+  end
+  object qryUltimaCarga: TADOQuery
+    Connection = dbPrincipal
+    CommandTimeout = 0
+    Parameters = <>
+    SQL.Strings = (
+      'select Max(a.NUMEROLISTA) as UltimaCarga from ITEMFATURADO a'
+      'join CARGA b on a.NUMEROLISTA=b.NUMEROLISTA'
+      'join PEDICLICAD c on c.numped=a.Pedido'
+      'where b.CODTRAN <> '#39#39)
+    Left = 136
+    Top = 192
+    object qryUltimaCargaUltimaCarga: TIntegerField
+      FieldName = 'UltimaCarga'
+      ReadOnly = True
+    end
+  end
+  object qryUltimaNota: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <
+      item
+        Name = 'Serie'
+        DataType = ftString
+        NumericScale = 255
+        Precision = 255
+        Size = 3
+        Value = Null
+      end>
+    SQL.Strings = (
+      'select Max(numnota) as UltimaNota from NFSAIDACAD a'
+      'where dtcancel is null'
+      'and serie=:Serie'
+      'and CodTran <> '#39#39
+      'and (select COUNT(*) from NFENTRACAD'
+      
+        'where numord=a.numord and NFENTRACAD.serie=a.serie and nfentraca' +
+        'd.dtcancel  is null)  = 0')
+    Left = 136
+    Top = 256
+    object qryUltimaNotaUltimaNota: TStringField
+      FieldName = 'UltimaNota'
+      ReadOnly = True
+      FixedChar = True
+      Size = 13
+    end
+  end
+  object qryCelularesInvalidos: TADOQuery
+    Connection = dbPrincipal
+    CommandTimeout = 0
+    Parameters = <>
+    SQL.Strings = (
+      'select'
+      ''
+      
+        'Replace(Replace(Replace((Replace(replace(VALOR,'#39'-'#39','#39#39'),'#39'.'#39','#39#39')),' +
+        #39' '#39','#39#39'),'#39'('#39','#39#39'),'#39')'#39','#39#39') as Celular,'
+      ''
+      
+        'case when Len(Replace(Replace(Replace((Replace(replace(VALOR,'#39'-'#39 +
+        ','#39#39'),'#39'.'#39','#39#39')),'#39' '#39','#39#39'),'#39'('#39','#39#39'),'#39')'#39','#39#39')) > 11 then '#39'Mais de um num' +
+        'ero de celular'#39' '
+      
+        'else case when Len(Replace(Replace(Replace((Replace(replace(VALO' +
+        'R,'#39'-'#39','#39#39'),'#39'.'#39','#39#39')),'#39' '#39','#39#39'),'#39'('#39','#39#39'),'#39')'#39','#39#39')) < 8  then '#39'Menos de ' +
+        'um numero de celular'#39
+      'end end as Motivo'
+      ',NITEM as  Cliente from COMUNICACAO_V '
+      ''
+      'where  RTIPO='#39'1075'#39
+      'and '
+      ''
+      
+        '(Len(Replace(Replace(Replace((Replace(replace(VALOR,'#39'-'#39','#39#39'),'#39'.'#39',' +
+        #39#39')),'#39' '#39','#39#39'),'#39'('#39','#39#39'),'#39')'#39','#39#39')) > 11'
+      
+        'or Len(Replace(Replace(Replace((Replace(replace(VALOR,'#39'-'#39','#39#39'),'#39'.' +
+        #39','#39#39')),'#39' '#39','#39#39'),'#39'('#39','#39#39'),'#39')'#39','#39#39')) < 8)')
+    Left = 136
+    Top = 312
+    object qryCelularesInvalidosCelular: TStringField
+      FieldName = 'Celular'
+      ReadOnly = True
+      Size = 28
+    end
+    object qryCelularesInvalidosCliente: TStringField
+      FieldName = 'Cliente'
+      Size = 254
+    end
+    object qryCelularesInvalidosMotivo: TStringField
+      FieldName = 'Motivo'
+      ReadOnly = True
+      Size = 28
+    end
+  end
+  object qryCategoriaProdutos: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    Parameters = <>
+    SQL.Strings = (
+      'select distinct descr as Categoria from CLASSIFCAD'
+      'order by descr')
+    Left = 144
+    Top = 424
+    object qryCategoriaProdutosCategoria: TStringField
+      FieldName = 'Categoria'
+      ReadOnly = True
+      Size = 34
+    end
+  end
+  object qryMediaVendasDia: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    Parameters = <>
+    SQL.Strings = (
+      'select Avg(Totais) as Media from '
+      '(select COUNT(*)as Totais from  VENDASSCAD'
+      
+        'where VENDASSCAD.dtven between  (Convert(Varchar(4),YEAR(GETDATE' +
+        '()))) +'#39'-01-01'#39' and GETDATE()'
+      'group by Convert(date,VENDASSCAD.dtven,103)) a')
+    Left = 256
+    Top = 73
+  end
+  object qryMediaNotas: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    Parameters = <>
+    SQL.Strings = (
+      'select Avg(Totais) as Media from '
+      '(select COUNT(*)as Totais from  NFSAIDACAD'
+      
+        'where NFSAIDACAD.dtemis between  (Convert(Varchar(4),YEAR(GETDAT' +
+        'E()))) +'#39'-01-01'#39' and GETDATE()'
+      'and NFSAIDACAD.dtcancel is null'
+      'group by Convert(date,NFSAIDACAD.dtemis,103)) a')
+    Left = 259
+    Top = 121
+  end
+  object qryVendas: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    Parameters = <>
+    SQL.Strings = (
+      
+        'select top 1 clientecad.OID,clientecad.NOME,VENDASSCAD.numped fr' +
+        'om VENDASSCAD'
+      'join PEDICLICAD on PEDICLICAD.numped=VENDASSCAD.numped'
+      'join CLIENTECAD on clientecad.OID=PEDICLICAD.codclie'
+      'order by VENDASSCAD.numped desc')
+    Left = 256
+    Top = 168
+    object qryVendasOID: TIntegerField
+      FieldName = 'OID'
+    end
+    object qryVendasNOME: TStringField
+      FieldName = 'NOME'
+      Size = 254
+    end
+    object qryVendasnumped: TIntegerField
+      FieldName = 'numped'
+    end
+  end
+  object qryOrcamento: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    Parameters = <>
+    SQL.Strings = (
+      
+        'select top 1 CLIENTECAD.OID,CLIENTECAD.NOME,PEDICLICAD.numped fr' +
+        'om PEDICLICAD'
+      'join CLIENTECAD on CLIENTECAD.OID=PEDICLICAD.codclie'
+      'where PEDICLICAD.sitven='#39'A'#39
+      'order by PEDICLICAD.numped desc')
+    Left = 256
+    Top = 216
+    object qryOrcamentoOID: TIntegerField
+      FieldName = 'OID'
+    end
+    object qryOrcamentoNOME: TStringField
+      FieldName = 'NOME'
+      Size = 254
+    end
+    object qryOrcamentonumped: TIntegerField
+      FieldName = 'numped'
+    end
+  end
+  object qryProdutosEmOferta: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    Parameters = <>
+    SQL.Strings = (
+      
+        'select top 1 PEDICLICAD.numped,PEDICLICAD.dtpedido,produtocad.de' +
+        'scr,PRODUTOCAD.codpro from PEDICLICAD'
+      'join ITEMCLICAD on ITEMCLICAD.numped=PEDICLICAD.numped'
+      'join OFERTASEST on OFERTASEST.codpro = ITEMCLICAD.codpro '
+      
+        'and OFERTASEST.dtvalidini <= GETDATE()  and OFERTASEST.dtvalidfi' +
+        'n >= GETDATE()'
+      'join PRODUTOCAD on PRODUTOCAD.codpro=ITEMCLICAD.codpro'
+      'where PEDICLICAD.sitven='#39'A'#39
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      '')
+    Left = 261
+    Top = 267
+    object qryProdutosEmOfertanumped: TIntegerField
+      FieldName = 'numped'
+    end
+    object qryProdutosEmOfertadtpedido: TDateTimeField
+      FieldName = 'dtpedido'
+    end
+    object qryProdutosEmOfertadescr: TStringField
+      FieldName = 'descr'
+      FixedChar = True
+      Size = 35
+    end
+    object qryProdutosEmOfertacodpro: TStringField
+      FieldName = 'codpro'
+      FixedChar = True
+      Size = 5
+    end
+  end
+  object qryCategoriaOferta: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    Parameters = <>
+    SQL.Strings = (
+      
+        'select  top 1 isnull(PRODUTOCAD.descr,'#39' '#39')  as descr from PRODUT' +
+        'OCAD '
+      'join CLASSIFCAD on CLASSIFCAD.clasprod=PRODUTOCAD.clasprod'
+      'join OFERTASEST on OFERTASEST.codpro=PRODUTOCAD.codpro'
+      'where OFERTASEST.dtvalidini <= GETDATE()  '
+      'and OFERTASEST.dtvalidfin >= GETDATE()'
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      '')
+    Left = 264
+    Top = 320
+    object qryCategoriaOfertadescr: TStringField
+      FieldName = 'descr'
+      FixedChar = True
+      Size = 35
+    end
+  end
+  object qryEmail: TADOQuery
+    Connection = dbPrincipal
+    Parameters = <
+      item
+        Name = 'Tipo'
+        Attributes = [paSigned]
+        DataType = ftInteger
+        Precision = 10
+        Size = 4
+        Value = Null
+      end
+      item
+        Name = 'Cliente'
+        Attributes = [paSigned]
+        DataType = ftInteger
+        Precision = 10
+        Size = 4
+        Value = Null
+      end>
+    SQL.Strings = (
+      'select Valor from COMUNICACAO_v'
+      'where rtipo in (:Tipo) and ritem=:Cliente'
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      '')
+    Left = 264
+    Top = 384
+    object qryEmailValor: TStringField
+      FieldName = 'Valor'
+      Size = 254
+    end
+  end
+  object qryParcelasVencer: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <
+      item
+        Name = 'Tipo'
+        Attributes = [paNullable]
+        DataType = ftString
+        NumericScale = 255
+        Precision = 255
+        Size = 254
+        Value = Null
+      end
+      item
+        Name = 'ListaCliente'
+        Attributes = [paNullable]
+        DataType = ftString
+        NumericScale = 255
+        Precision = 255
+        Size = 254
+        Value = Null
+      end
+      item
+        Name = 'MinDias'
+        Attributes = [paSigned, paNullable]
+        DataType = ftInteger
+        Precision = 10
+        Size = 4
+        Value = Null
+      end
+      item
+        Name = 'MaxDias'
+        Attributes = [paSigned, paNullable]
+        DataType = ftInteger
+        Precision = 10
+        Size = 4
+        Value = Null
+      end
+      item
+        Name = 'ValorMinimo'
+        Attributes = [paSigned, paNullable]
+        DataType = ftBCD
+        NumericScale = 2
+        Precision = 19
+        Size = 19
+        Value = Null
+      end>
+    SQL.Strings = (
+      'select '
+      '  RCLIENTE,'
+      '  VENCIMENTO,'
+      '  VALORNAMOEDA1-CREDITOACUMULADO as ValorNaMoeda1,'
+      '  NSITUACAO,'
+      '  RSITUACAO,'
+      '  NCLIENTE,'
+      '  NTIPO,'
+      '  DATEDIFF(DAY,VENCIMENTO,GETDATE()) AS Dias,'
+      '  codigo'
+      'from '
+      '  CONTAARECEBER_V'
+      'where '
+      '  RSITUACAO=2347 and'
+      '  VENCIMENTO >= GETDATE()and'
+      '  NTIPO IN (:Tipo) and'
+      '  NCLIENTE NOT IN (:ListaCliente) and'
+      '  abs(DATEDIFF(DAY,VENCIMENTO,GETDATE())) >= :MinDias and'
+      '  abs(DATEDIFF(DAY,VENCIMENTO,GETDATE())) <= :MaxDias and'
+      '  VALORNAMOEDA1-CREDITOACUMULADO >:ValorMinimo'
+      'ORDER BY'
+      '  abs(DATEDIFF(DAY,VENCIMENTO,GETDATE()))'
+      ''
+      '')
+    Left = 360
+    Top = 72
+    object IntegerField1: TIntegerField
+      FieldName = 'RCLIENTE'
+    end
+    object DateTimeField1: TDateTimeField
+      FieldName = 'VENCIMENTO'
+    end
+    object BCDField1: TBCDField
+      FieldName = 'VALORNAMOEDA1'
+      currency = True
+      Precision = 18
+      Size = 2
+    end
+    object StringField1: TStringField
+      FieldName = 'NSITUACAO'
+      Size = 254
+    end
+    object IntegerField2: TIntegerField
+      FieldName = 'RSITUACAO'
+    end
+    object StringField2: TStringField
+      FieldName = 'NCLIENTE'
+      Size = 254
+    end
+    object StringField3: TStringField
+      FieldName = 'NTIPO'
+      Size = 254
+    end
+    object IntegerField3: TIntegerField
+      FieldName = 'Dias'
+      ReadOnly = True
+    end
+    object StringField4: TStringField
+      FieldName = 'codigo'
+      Size = 254
+    end
+  end
+  object qryRelClientesListaNegra: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <>
+    SQL.Strings = (
+      'select '
+      '  OID,'
+      '  Nome as RAZSOC'
+      'from '
+      '  CLIENTECAD'
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      ''
+      '')
+    Left = 368
+    Top = 136
+    object qryRelClientesListaNegraRAZSOC: TStringField
+      FieldName = 'RAZSOC'
+      Size = 300
+    end
+    object qryRelClientesListaNegraOID: TIntegerField
+      FieldName = 'OID'
+      ProviderFlags = [pfInUpdate, pfInWhere, pfInKey]
+    end
+  end
+  object dspClientesListaNegra: TDataSetProvider
+    DataSet = qryRelClientesListaNegra
+    UpdateMode = upWhereKeyOnly
+    Left = 368
+    Top = 200
+  end
+  object cdsClientesListaNegra: TClientDataSet
+    Aggregates = <>
+    Params = <>
+    ProviderName = 'dspClientesListaNegra'
+    Left = 368
+    Top = 248
+    object cdsClientesListaNegraRAZSOC: TStringField
+      FieldName = 'RAZSOC'
+      Size = 300
+    end
+    object cdsClientesListaNegraOID: TIntegerField
+      FieldName = 'OID'
+      ProviderFlags = [pfInUpdate, pfInWhere, pfInKey]
+    end
+    object cdsClientesListaNegraCh2: TStringField
+      FieldKind = fkInternalCalc
+      FieldName = 'Ch'
+      Size = 1
+    end
+  end
+  object qryConfirmacaoEntrega: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <>
+    SQL.Strings = (
+      'select '
+      '  top 1'
+      '  NFSAIDACAD.numnota,'
+      '  NFSAIDACAD.Serie,'
+      '  NFSAIDACAD.dtemis, '
+      '  NFSAIDACAD.CodClie,'
+      ' CLIENTECAD.NOME'
+      'from '
+      '  HISTENTCAD'
+      'join '
+      '  NFSAIDACAD ON NFSAIDACAD.NUMORD  = HISTENTCAD.numord'
+      'join'
+      ' CLIENTECAD on CLIENTECAD.OID =  NFSAIDACAD.codclie'
+      'WHERE'
+      '  HISTENTCAD.tipohist=4 AND'
+      '  cast(HISTENTCAD.dthist as date) = cast(GETDATE() as date)'
+      'ORDER BY   '
+      '  HISTENTCAD.dthist DESC'
+      '  '
+      ''
+      '  '
+      '  ')
+    Left = 368
+    Top = 304
+    object qryConfirmacaoEntreganumnota: TStringField
+      FieldName = 'numnota'
+      FixedChar = True
+      Size = 13
+    end
+    object qryConfirmacaoEntregaSerie: TStringField
+      FieldName = 'Serie'
+      FixedChar = True
+      Size = 3
+    end
+    object qryConfirmacaoEntregadtemis: TDateTimeField
+      FieldName = 'dtemis'
+    end
+    object qryConfirmacaoEntregaCodClie: TIntegerField
+      FieldName = 'CodClie'
+    end
+    object qryConfirmacaoEntregaNome: TStringField
+      DisplayWidth = 80
+      FieldName = 'Nome'
+    end
+  end
+  object qryVendasSatisfacao: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    Parameters = <>
+    SQL.Strings = (
+      
+        'select top 1 clientecad.OID,clientecad.NOME,VENDASSCAD.numped fr' +
+        'om VENDASSCAD'
+      'join PEDICLICAD on PEDICLICAD.numped=VENDASSCAD.numped'
+      'join CLIENTECAD on clientecad.OID=PEDICLICAD.codclie'
+      'order by VENDASSCAD.numped desc')
+    Left = 368
+    Top = 387
+    object IntegerField4: TIntegerField
+      FieldName = 'OID'
+    end
+    object StringField5: TStringField
+      FieldName = 'NOME'
+      Size = 254
+    end
+    object IntegerField5: TIntegerField
+      FieldName = 'numped'
+    end
+  end
+  object qryConfirmacaoEntregaSatisfacao: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <>
+    SQL.Strings = (
+      'select '
+      '  top 1'
+      '  NFSAIDACAD.numnota,'
+      '  NFSAIDACAD.Serie,'
+      '  NFSAIDACAD.dtemis, '
+      '  NFSAIDACAD.CodClie,'
+      ' CLIENTECAD.NOME'
+      'from '
+      '  HISTENTCAD'
+      'join '
+      '  NFSAIDACAD ON NFSAIDACAD.NUMORD  = HISTENTCAD.numord'
+      'join'
+      ' CLIENTECAD on CLIENTECAD.OID =  NFSAIDACAD.codclie'
+      'WHERE'
+      '  HISTENTCAD.tipohist=4 AND'
+      '  cast(HISTENTCAD.dthist as date) = cast(GETDATE() as date)'
+      'ORDER BY   '
+      '  HISTENTCAD.dthist DESC'
+      '  '
+      ''
+      '  '
+      '  ')
+    Left = 368
+    Top = 448
+    object StringField6: TStringField
+      FieldName = 'numnota'
+      FixedChar = True
+      Size = 13
+    end
+    object StringField7: TStringField
+      FieldName = 'Serie'
+      FixedChar = True
+      Size = 3
+    end
+    object DateTimeField2: TDateTimeField
+      FieldName = 'dtemis'
+    end
+    object IntegerField6: TIntegerField
+      FieldName = 'CodClie'
+    end
+    object StringField8: TStringField
+      DisplayWidth = 80
+      FieldName = 'Nome'
+    end
+  end
+  object qryCategoriaProdutosNaoComprou: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    Parameters = <>
+    SQL.Strings = (
+      'select distinct descr as Categoria from CLASSIFCAD'
+      'order by descr')
+    Left = 144
+    Top = 472
+    object StringField9: TStringField
+      FieldName = 'Categoria'
+      ReadOnly = True
+      Size = 34
+    end
+  end
+  object qryCelularVenda: TADOQuery
+    Connection = dbPrincipal
+    CursorType = ctStatic
+    CommandTimeout = 0
+    Parameters = <
+      item
+        Name = 'Cliente'
+        Attributes = [paSigned]
+        DataType = ftInteger
+        Precision = 10
+        Size = 4
+        Value = Null
+      end>
+    SQL.Strings = (
+      'select'
+      '  top 5'
+      '  Disctinct'
+      
+        '  Replace(Replace(REPLACE(REPLACE(replace(telecli,'#39'-'#39','#39#39'),'#39'('#39','#39#39 +
+        ' ),'#39')'#39','#39#39'),'#39' '#39','#39#39'),'#39'.'#39','#39#39') as Celular,'
+      '  Cidade_v.DDD'
+      'from'
+      '  pediclicad'
+      '    join Cidade_v on Cidade_v.nome=pediclicad.cidadcli  '
+      'where'
+      '  CodClie=:Cliente   '
+      
+        '  and Replace(Replace(REPLACE(REPLACE(replace(telecli,'#39'-'#39','#39#39'),'#39'(' +
+        #39','#39#39' ),'#39')'#39','#39#39'),'#39' '#39','#39#39'),'#39'.'#39','#39#39') <> '#39#39)
+    Left = 488
+    Top = 135
+    object qryCelularVendaCelular: TStringField
+      FieldName = 'Celular'
+      Size = 12
+    end
+    object qryCelularVendaddd: TStringField
+      FieldName = 'ddd'
+      Size = 3
+    end
+  end
+end

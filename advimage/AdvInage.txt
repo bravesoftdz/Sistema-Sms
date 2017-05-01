@@ -1,0 +1,41 @@
+From:
+
+Janick Fortin
+fortin01@gel.ulaval.ca
+
+
+TAdvimage 	for Delphi3
+
+
+also include TGifImage by  Mark Boler (89a et 87a)
+
+
+All Components are FreeWare!
+
+
+1. CONTENTS
+===========
+The package AdvImage.Zip contains One program (with all needed units):
+
+1. project1.dpr
+
+The first one is a program to just test the ability to read,
+display GIF, JPEG, BMP.  
+
+
+2. BUGS/SUGGESTIONS
+===================
+Please let me know if you find any bugs or if you have
+an idea or a way to further improve it.
+Especially if it doesn't load some gif file, send me the
+particular gif file so I can see what's wrong.
+
+
+3. AVAILABILITY
+===============
+Also let me know if you have seen this component at any other
+site than
+- the Delphi Super Page
+
+Janick Fortin
+fortin01@gel.ulaval.ca

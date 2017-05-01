@@ -1,0 +1,13 @@
+program PSmsRespostas;
+
+uses
+  Forms,
+  SmsRespostas in 'SmsRespostas.pas' {Sms};
+
+{$R *.res}
+
+begin
+  Application.Initialize;
+  Application.CreateForm(TSms, Sms);
+  Application.Run;
+end.

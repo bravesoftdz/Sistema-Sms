@@ -1,0 +1,35 @@
+Inicio
+[cliente______________________________] hhh[Vencimento] [TipoVencimento]aa
+Fim
+Inicio
+2
+Fim
+Inicio
+0
+Fim
+Inicio
+2
+Fim
+Inicio
+'EDIMILSON FERNANDES'
+,'tESTE'
+,'tESTE'
+,'tESTE2'
+,'tESTE2'
+,'tESTE'
+Fim
+Inicio
+1
+Fim
+Inicio
+2
+Fim
+Inicio
+'Nota de Crédito'
+,'Cartao Credito'
+,'Cartao Credito'
+,'Carteira'
+Fim
+Inicio
+15:45
+Fim

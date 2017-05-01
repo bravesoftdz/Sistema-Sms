@@ -1,0 +1,244 @@
+unit dmuServidor;
+
+interface
+
+uses
+  SysUtils, Classes, DBXpress, DB, SqlExpr, FMTBcd, Provider, DBClient,
+  ZAbstractConnection, ZConnection, ZSqlUpdate, ZAbstractRODataset,
+  ZAbstractDataset, ZDataset, ExtCtrls;
+
+type
+  TdmServidor = class(TDataModule)
+    dbSmsRecebidos: TZConnection;
+    qrySmsRecebidos: TZQuery;
+    upSmsRecebidos: TZUpdateSQL;
+    qrySmsRecebidosNumero: TStringField;
+    qrySmsRecebidosMensagem: TStringField;
+    qrySmsRecebidosData: TStringField;
+    qrySmsRecebidosHora: TStringField;
+    qrySmsRecebidosOriginal: TStringField;
+    dbListaSmsEmail: TZConnection;
+    qryListaSmsEmail: TZQuery;
+    upListaSmsEmail: TZUpdateSQL;
+    dbAgendamentoSms: TZConnection;
+    qryAgendamentoSms: TZQuery;
+    upAgendamentoSms: TZUpdateSQL;
+    dbOrcamentoSms: TZConnection;
+    qryOrcamentoSms: TZQuery;
+    upOrcamentoSms: TZUpdateSQL;
+    dbVendaSms: TZConnection;
+    qryVendaSms: TZQuery;
+    upVendaSms: TZUpdateSQL;
+    dbAvisoOrcamentoEmail: TZConnection;
+    qryAvisoOrcamentoEmail: TZQuery;
+    upAvisoOrcamentoEmail: TZUpdateSQL;
+    dbAvisoVendaEmail: TZConnection;
+    qryAvisoVendaEmail: TZQuery;
+    upAvisoVendaEmail: TZUpdateSQL;
+    dbTextoEmail: TZConnection;
+    qryTextoEmail: TZQuery;
+    upTextoEmail: TZUpdateSQL;
+    dbAgendamentoEmail: TZConnection;
+    qryAgendamentoEmail: TZQuery;
+    upAgendamentoEmail: TZUpdateSQL;
+    dbTextoAgendamentoEmail: TZConnection;
+    qryTextoAgendamentoEmail: TZQuery;
+    upTextoAgendamentoEmail: TZUpdateSQL;
+    dbAtividade: TZConnection;
+    qryAgendamentoSmsCnpj: TStringField;
+    qryAgendamentoSmscelular: TStringField;
+    qryAgendamentoSmsEnviado: TIntegerField;
+    qryAgendamentoSmsMensagem: TStringField;
+    qryAgendamentoSmsTipo: TStringField;
+    qrySmsRecebidosid: TIntegerField;
+    qryListaSmsEmailCnpj: TStringField;
+    qryListaSmsEmailcelular: TStringField;
+    qryListaSmsEmailEnviado: TIntegerField;
+    qryListaSmsEmailMensagem: TStringField;
+    qryListaSmsEmailRemetente: TStringField;
+    qryListaSmsEmailTipo: TStringField;
+    qryListaSmsEmailCodigoTextoEmail: TStringField;
+    qryListaSmsEmaildata: TDateField;
+    qryListaSmsEmailhora: TTimeField;
+    qryAgendamentoSmsid: TIntegerField;
+    qryOrcamentoSmsCnpj: TStringField;
+    qryOrcamentoSmscelular: TStringField;
+    qryOrcamentoSmsEnviado: TIntegerField;
+    qryOrcamentoSmsMensagem: TStringField;
+    qryOrcamentoSmsTipo: TStringField;
+    qryOrcamentoSmsid: TIntegerField;
+    qryVendaSmsCnpj: TStringField;
+    qryVendaSmscelular: TStringField;
+    qryVendaSmsEnviado: TIntegerField;
+    qryVendaSmsMensagem: TStringField;
+    qryVendaSmsTipo: TStringField;
+    qryVendaSmsid: TIntegerField;
+    qryAvisoOrcamentoEmailCnpj: TStringField;
+    qryAvisoOrcamentoEmailcelular: TStringField;
+    qryAvisoOrcamentoEmailEnviado: TIntegerField;
+    qryAvisoOrcamentoEmailMensagem: TStringField;
+    qryAvisoOrcamentoEmailRemetente: TStringField;
+    qryAvisoOrcamentoEmailTipo: TStringField;
+    qryAvisoOrcamentoEmailCodigoTextoEmail: TStringField;
+    qryAvisoOrcamentoEmailid: TIntegerField;
+    qryAvisoVendaEmailCnpj: TStringField;
+    qryAvisoVendaEmailcelular: TStringField;
+    qryAvisoVendaEmailEnviado: TIntegerField;
+    qryAvisoVendaEmailMensagem: TStringField;
+    qryAvisoVendaEmailRemetente: TStringField;
+    qryAvisoVendaEmailTipo: TStringField;
+    qryAvisoVendaEmailCodigoTextoEmail: TStringField;
+    qryAvisoVendaEmailid: TIntegerField;
+    qryTextoEmailCodigoTextoEmail: TStringField;
+    qryTextoEmailTexto: TMemoField;
+    qryTextoEmailCnpj: TStringField;
+    qryAtividade: TZQuery;
+    StringField76: TStringField;
+    StringField77: TStringField;
+    StringField78: TStringField;
+    StringField79: TStringField;
+    StringField80: TStringField;
+    qryTextoAgendamentoEmailCodigoTextoEmail: TStringField;
+    qryTextoAgendamentoEmailTexto: TMemoField;
+    qryTextoAgendamentoEmailCnpj: TStringField;
+    qryAgendamentoEmailCnpj: TStringField;
+    qryAgendamentoEmailcelular: TStringField;
+    qryAgendamentoEmailEnviado: TIntegerField;
+    qryAgendamentoEmailMensagem: TStringField;
+    qryAgendamentoEmailRemetente: TStringField;
+    qryAgendamentoEmailTipo: TStringField;
+    qryAgendamentoEmailCodigoTextoEmail: TStringField;
+    qryAgendamentoEmailid: TIntegerField;
+    dbAgendados: TZConnection;
+    qryAgendados: TZQuery;
+    upAgendados: TZUpdateSQL;
+    qryAgendadosid: TIntegerField;
+    qryAgendadosData: TStringField;
+    qryAgendadosHora: TStringField;
+    qryAgendadosTitulo: TStringField;
+    qryAgendadosUltimaExecucao: TStringField;
+    qryAgendadosTipo: TStringField;
+    qryAgendadosCNPJ: TStringField;
+    dbEntregaSms: TZConnection;
+    qryEntregaSms: TZQuery;
+    StringField1: TStringField;
+    StringField2: TStringField;
+    IntegerField1: TIntegerField;
+    StringField3: TStringField;
+    StringField4: TStringField;
+    IntegerField2: TIntegerField;
+    upEntregaSms: TZUpdateSQL;
+    dbCargaSms: TZConnection;
+    qryCargaSms: TZQuery;
+    StringField5: TStringField;
+    StringField6: TStringField;
+    IntegerField3: TIntegerField;
+    StringField7: TStringField;
+    StringField8: TStringField;
+    IntegerField4: TIntegerField;
+    upCargaSms: TZUpdateSQL;
+    dbCobrancaSms: TZConnection;
+    qryCobrancaSms: TZQuery;
+    StringField9: TStringField;
+    StringField10: TStringField;
+    IntegerField5: TIntegerField;
+    StringField11: TStringField;
+    StringField12: TStringField;
+    IntegerField6: TIntegerField;
+    upCobrancaSms: TZUpdateSQL;
+    dbAniversarioSms: TZConnection;
+    qryAniversarioSms: TZQuery;
+    StringField13: TStringField;
+    StringField14: TStringField;
+    IntegerField7: TIntegerField;
+    StringField15: TStringField;
+    StringField16: TStringField;
+    IntegerField8: TIntegerField;
+    upAniversarioSms: TZUpdateSQL;
+    dbCobrancaEmail: TZConnection;
+    qryCobrancaEmail: TZQuery;
+    upCobrancaEmail: TZUpdateSQL;
+    qryCobrancaEmailCnpj: TStringField;
+    qryCobrancaEmailcelular: TStringField;
+    qryCobrancaEmailEnviado: TIntegerField;
+    qryCobrancaEmailMensagem: TStringField;
+    qryCobrancaEmailRemetente: TStringField;
+    qryCobrancaEmailTipo: TStringField;
+    qryCobrancaEmailCodigoTextoEmail: TStringField;
+    qryCobrancaEmailid: TIntegerField;
+    dbAvisoVencimentoEmail: TZConnection;
+    qryAvisoVencimentoEmail: TZQuery;
+    StringField17: TStringField;
+    StringField18: TStringField;
+    IntegerField9: TIntegerField;
+    StringField19: TStringField;
+    StringField20: TStringField;
+    StringField21: TStringField;
+    StringField22: TStringField;
+    IntegerField10: TIntegerField;
+    upAvisoVencimentoEmail: TZUpdateSQL;
+    dbAvisoVencimentoSms: TZConnection;
+    qryAvisoVencimentoSms: TZQuery;
+    StringField23: TStringField;
+    StringField24: TStringField;
+    IntegerField11: TIntegerField;
+    StringField25: TStringField;
+    StringField26: TStringField;
+    IntegerField12: TIntegerField;
+    upAvisoVencimentoSms: TZUpdateSQL;
+    dbVerificaResete: TZConnection;
+    qryVerificaResete: TZQuery;
+    qryVerificaReseteReseta: TStringField;
+    tPingServer: TTimer;
+    dbSenha: TZConnection;
+    qrySenha: TZQuery;
+    qrySenhaSenhaAlteracao: TStringField;
+    ZQuery1: TZQuery;
+    StringField27: TStringField;
+    dbNaoRepetirSms: TZConnection;
+    qryNaoRepetirSms: TZQuery;
+    StringField28: TStringField;
+    StringField29: TStringField;
+    StringField30: TStringField;
+    StringField31: TStringField;
+    StringField32: TStringField;
+    dbConfirmacaoEntregaSms: TZConnection;
+    qryConfirmacaoEntregaSms: TZQuery;
+    StringField33: TStringField;
+    StringField34: TStringField;
+    IntegerField13: TIntegerField;
+    StringField35: TStringField;
+    StringField36: TStringField;
+    IntegerField14: TIntegerField;
+    upConfirmacaoEntregaSms: TZUpdateSQL;
+    procedure tPingServerTimer(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  dmServidor: TdmServidor;
+
+implementation
+
+{$R *.dfm}
+
+procedure PingServerEmTodosOsComponentes;
+var i : Integer;
+begin
+  For i:=0 to dmServidor.ComponentCount -1 do
+  begin
+    if (dmServidor.Components[I] is TZConnection) then
+      TZConnection(dmServidor.Components[i]).PingServer;
+  end;
+end;
+
+
+procedure TdmServidor.tPingServerTimer(Sender: TObject);
+begin
+  PingServerEmTodosOsComponentes;
+end;
+
+end.

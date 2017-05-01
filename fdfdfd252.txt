@@ -1,0 +1,3 @@
+Resposta;Qtde;Percentual
+7;1;100
+Total de Respostas no Periodo ;1
