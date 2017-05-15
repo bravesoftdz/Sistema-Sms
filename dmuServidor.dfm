@@ -6,10 +6,10 @@ object dmServidor: TdmServidor
     ControlsCodePage = cGET_ACP
     Properties.Strings = (
       'AutoEncodeStrings=ON')
-    HostName = '181.41.197.187'
+    HostName = 'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com'
     Port = 3306
-    Database = 'bibiacom_Sms'
-    User = 'bibiacom_Simples'
+    Database = 'mercurio'
+    User = 'cadmus182'
     Password = 'cadmus182'
     Protocol = 'mysql-5'
     LibraryLocation = 'libmySQL.dll'
@@ -2038,7 +2038,7 @@ object dmServidor: TdmServidor
     end
   end
   object tPingServer: TTimer
-    Interval = 90000
+    Interval = 9000
     OnTimer = tPingServerTimer
     Left = 960
     Top = 456

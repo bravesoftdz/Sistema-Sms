@@ -240,11 +240,12 @@ implementation
 procedure PingServerEmTodosOsComponentes;
 var i : Integer;
 begin
-  For i:=0 to dmServidor.ComponentCount -1 do
+  {For i:=0 to dmServidor.ComponentCount -1 do
   begin
     if (dmServidor.Components[I] is TZConnection) then
       TZConnection(dmServidor.Components[i]).PingServer;
-  end;
+  end;}
+  dmServidor.dbPrincipal.PingServer;
 end;
 
 

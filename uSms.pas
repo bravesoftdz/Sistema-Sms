@@ -1566,15 +1566,15 @@ begin
     qryAtividade.Close;
     if Sentido = 'Ligar' then
       qryAtividade.Sql.Text :=
-        'update Clientes set UltimaDataAtivo=Current_Date' + #13 +
-        ',UltimaHoraAtivo=Current_Time' + #13 + ',EmailAviso=' + '''' +
-        Sms.edEmailAviso.Text + '''' + #13 + ',CelularAviso=' + '''' +
+        'update Clientes set UltimaDataAtivo='  +''''+ FormatDateTime('yyyy-mm-dd',Date) +''''+ #13 +
+        ',UltimaHoraAtivo= '+''''+ FormatDateTime('hh:mm:ss',Now) +''''+ #13+
+        ',EmailAviso=' + '''' +Sms.edEmailAviso.Text + '''' + #13 + ',CelularAviso=' + '''' +
         Sms.edCelularAviso.Text + '''' + #13 + ',AvisaInatividade=' +
         '''Sim''' + #13 + 'where Cnpj=' + '''' + Sms.edCnpj.Text + ''''
     else
       qryAtividade.Sql.Text :=
-        'update Clientes set UltimaDataAtivo=' + FormatDateTime('yyyy-mm-dd',
-        Date) + #13 + ',UltimaHoraAtivo=Current_Time' + #13 +
+        'update Clientes set UltimaDataAtivo=' +''''+ FormatDateTime('yyyy-mm-dd',Date) +''''+ #13 +
+        ',UltimaHoraAtivo=' +''''+ FormatDateTime('hh:mm:ss',Now) +''''+ #13 +
         ',EmailAviso=+''Sem''' + #13 + ',CelularAviso=+''Sem''' + #13 +
         ',AvisaInatividade=' + '''Não''' + #13 + 'where Cnpj=' + '''' +
         Sms.edCnpj.Text + '''';
@@ -2792,8 +2792,7 @@ begin
     begin
       Result := '';
       dmuPrincipal.qryCelularVenda.Close;
-      dmuPrincipal.qryCelularVenda.Parameters.ParamByName('Cliente')
-        .Value := Cliente;
+      dmuPrincipal.qryCelularVenda.Parameters.ParamByName('Cliente').Value := Cliente;
       dmuPrincipal.qryCelularVenda.Open;
       dmuPrincipal.qryCelularVenda.First;
       while not dmuPrincipal.qryCelularVenda.Eof do
@@ -6328,17 +6327,13 @@ begin
     begin
       Result := False;
       InicioValido := '7,8,9';
-      if (Length(Celular) = 8) and AnsiContainsStr(InicioValido, Celular[1])
-        then
+      if (Length(Celular) = 8) and AnsiContainsStr(InicioValido, Celular[1])  then
         Result := true;
-      if (Length(Celular) = 10) and AnsiContainsStr(InicioValido, Celular[3])
-        then
+      if (Length(Celular) = 10) and AnsiContainsStr(InicioValido, Celular[3]) then
         Result := true;
-      if (Length(Celular) = 11) and AnsiContainsStr(InicioValido, Celular[4])
-        then
+      if (Length(Celular) = 11) and AnsiContainsStr(InicioValido, Celular[4]) then
         Result := true;
-      if (Length(Celular) = 12) and AnsiContainsStr(InicioValido, Celular[5])
-        then
+      if (Length(Celular) = 12) and AnsiContainsStr(InicioValido, Celular[5]) then
         Result := true;
     end;
 
