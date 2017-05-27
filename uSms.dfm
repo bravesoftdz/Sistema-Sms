@@ -449,7 +449,7 @@
               Top = 16
               Width = 191
               Height = 154
-              Date = 42053.355335069440000000
+              Date = 42053.971496724540000000
               TabOrder = 0
               OnClick = clDatasClick
             end
@@ -9954,13 +9954,11 @@
             item
               Expanded = False
               FieldName = 'Hora'
-              Width = 64
               Visible = True
             end
             item
               Expanded = False
               FieldName = 'Original'
-              Width = 64
               Visible = True
             end>
         end
@@ -14133,5 +14131,53 @@
     DataSet = dmServidor.qryResultadoPesquisaSatisfacao
     Left = 952
     Top = 208
+  end
+  object dbPrincipalu: TZConnection
+    ControlsCodePage = cGET_ACP
+    Properties.Strings = (
+      'AutoEncodeStrings=ON')
+    Connected = True
+    HostName = 'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com'
+    Port = 3306
+    Database = 'mercurio'
+    User = 'cadmus182'
+    Password = 'cadmus182'
+    Protocol = 'mysql-5'
+    LibraryLocation = 'libmySQL.dll'
+    Left = 58
+    Top = 10
+  end
+  object qryInsereSms: TZQuery
+    Connection = dbPrincipalu
+    SQL.Strings = (
+      'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
+      'where 1=2 '
+      '')
+    Params = <>
+    Left = 778
+    Top = 72
+    object WideStringField1: TWideStringField
+      FieldName = 'Cnpj'
+      Size = 40
+    end
+    object WideStringField2: TWideStringField
+      FieldName = 'celular'
+      Size = 80
+    end
+    object IntegerField1: TIntegerField
+      FieldName = 'Enviado'
+    end
+    object WideStringField3: TWideStringField
+      FieldName = 'Mensagem'
+      Size = 180
+    end
+    object WideStringField4: TWideStringField
+      FieldName = 'Tipo'
+      Size = 1
+    end
+    object IntegerField2: TIntegerField
+      FieldName = 'id'
+      Required = True
+    end
   end
 end

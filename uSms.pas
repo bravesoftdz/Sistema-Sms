@@ -559,6 +559,14 @@ type
     DBGrid1: TDBGrid;
     dsResultadoPesquisaSatisfacao: TDataSource;
     btExportarPesquisaSatisfacao: TBitBtn;
+    dbPrincipalu: TZConnection;
+    qryInsereSms: TZQuery;
+    WideStringField1: TWideStringField;
+    WideStringField2: TWideStringField;
+    IntegerField1: TIntegerField;
+    WideStringField3: TWideStringField;
+    WideStringField4: TWideStringField;
+    IntegerField2: TIntegerField;
     procedure mmMensagemPromocaoChange(Sender: TObject);
     procedure mmMensagemAvisoEntregaFiliaisChange(Sender: TObject);
     procedure btSalvarPromocaoClick(Sender: TObject);
@@ -918,7 +926,6 @@ type
     procedure edCelularSatisfacaoEnter(Sender: TObject);
     procedure tVerificaPesquisaDeSatisfacaoTimer(Sender: TObject);
     procedure tVerificaRepostaPesquisaTimer(Sender: TObject);
-    procedure BitBtn2Click(Sender: TObject);
     procedure ckCopiaSmsRespostaClick(Sender: TObject);
     procedure btTesteFtpClick(Sender: TObject);
     procedure ckPausarAvisoDeEnvioClick(Sender: TObject);
@@ -950,7 +957,7 @@ type
     // DDD : TDDD;
   public
     { Public declarations }
-
+    procedure InsereSms(Celular, Mensagem: String);
   end;
 
 var
@@ -983,6 +990,36 @@ implementation
 uses UdmuPrincipal, qruCelularesInvalidos, Math, dmuServidor, UProcedures,
   StdConvs;
 {$R *.dfm}
+
+procedure TSms.InsereSms(Celular, Mensagem: String);
+Var
+  dbPrincipal: TZConnection;
+  qryInsereSms: TZQuery;
+begin
+  Application.ProcessMessages;
+  dbPrincipal := TZConnection.create(nil);
+  dbPrincipal.HostName := 'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+  dbPrincipal.LibraryLocation := 'libmySQL.dll';
+  dbPrincipal.user := 'cadmus182';
+  dbPrincipal.Port := 3306;
+  dbPrincipal.Password := 'cadmus182';
+  dbPrincipal.Database := 'mercurio';
+  dbPrincipal.Protocol := 'mysql-5';
+  dbPrincipal.Connect;
+  qryInsereSms := TZQuery.create(nil);
+  qryInsereSms.connection := dbPrincipal;
+  qryInsereSms.SQL.Text :=
+    'Insert Into Enviados(Cnpj,Celular,Enviado,Mensagem,Tipo)' + #13 +
+    'Values(' + ''''+edCnpj.Text+'''' + ',' + ''''+Celular+'''' + ',' + ''''+'0'+'''' + ',' + ''''+Mensagem+'''' + ',' + ''''+'S'+'''' + ' )';
+  Try
+    qryInsereSms.ExecSQL;
+    dbPrincipal.Destroy;
+    qryInsereSms.Destroy;
+  Except
+    dbPrincipal.Destroy;
+    qryInsereSms.Destroy;
+  End;
+end;
 
 procedure CarregaListaCategoriaExternaComboListaCategoriasExterno;
 begin
@@ -1086,7 +1123,7 @@ function TextoNaMemo(Arquivo: String): String;
 Var
   Memo: TMemo;
 begin
-  Memo := TMemo.Create(Nil);
+  Memo := TMemo.create(Nil);
   Memo.Parent := Sms;
   Memo.Hide;
   Memo.Lines.LoadFromFile(Arquivo);
@@ -1257,7 +1294,7 @@ var
   ButtonTop, ButtonWidth, ButtonHeight: Integer;
 begin
   Result := False;
-  Form := TForm.Create(Application);
+  Form := TForm.create(Application);
   with Form do
     try
       Canvas.Font := Font;
@@ -1266,7 +1303,7 @@ begin
       Caption := ACaption;
       ClientWidth := MulDiv(180, DialogUnits.X, 4);
       Position := poScreenCenter;
-      Prompt := TLabel.Create(Form);
+      Prompt := TLabel.create(Form);
       with Prompt do
       begin
         Parent := Form;
@@ -1276,7 +1313,7 @@ begin
         Constraints.MaxWidth := MulDiv(164, DialogUnits.X, 4);
         WordWrap := true;
       end;
-      Edit := TEdit.Create(Form);
+      Edit := TEdit.create(Form);
       with Edit do
       begin
         { Usando a fonte Wingdings e a letra "ele" em minúsculo, simula-se as "bolinhas" no lugar
@@ -1294,7 +1331,7 @@ begin
       ButtonTop := Edit.Top + Edit.Height + 15;
       ButtonWidth := MulDiv(50, DialogUnits.X, 4);
       ButtonHeight := MulDiv(14, DialogUnits.Y, 8);
-      with TButton.Create(Form) do
+      with TButton.create(Form) do
       begin
         Parent := Form;
         Caption := 'Confirmar';
@@ -1303,7 +1340,7 @@ begin
         SetBounds(MulDiv(38, DialogUnits.X, 4), ButtonTop, ButtonWidth,
           ButtonHeight);
       end;
-      with TButton.Create(Form) do
+      with TButton.create(Form) do
       begin
         Parent := Form;
         Caption := 'Cancelar';
@@ -1359,7 +1396,7 @@ Procedure SalvarAquivoTextoEmail(Texto, NomeArquivo: String);
 Var
   Memo: TMemo;
 begin
-  Memo := TMemo.Create(Nil);
+  Memo := TMemo.create(Nil);
   Memo.Text := Texto;
   Memo.Text := Texto;
   Memo.Lines.SaveToFile(NomeArquivo + '.txt');
@@ -1387,12 +1424,12 @@ end;
 
 procedure SalvaSenha(Tipo, Senha: String);
 Var
-  Sql: String;
+  SQL: String;
 begin
   with dmServidor do
   begin
     qrySenha.Active := False;
-    qrySenha.Sql.Text := 'update ' + #13 + 'Clientes set SenhaAlteracao=' +
+    qrySenha.SQL.Text := 'update ' + #13 + 'Clientes set SenhaAlteracao=' +
       '''' + Senha + '''' + #13 + 'where Cnpj=' + '''' + Sms.edCnpj.Text +
       '''';
     // Sql := qrySenha.SQL.Text;
@@ -1406,7 +1443,7 @@ begin
   with dmServidor do
   begin
     qrySenha.Active := False;
-    qrySenha.Sql.Text := 'select  ' + #13 + '  SenhaAlteracao' + #13 +
+    qrySenha.SQL.Text := 'select  ' + #13 + '  SenhaAlteracao' + #13 +
       'from ' + #13 + '  Clientes ' + #13 + 'where Cnpj=' + '''' +
       Sms.edCnpj.Text + '''';
     qrySenha.Active := true;
@@ -1557,35 +1594,49 @@ end;
 
 procedure GravaAtividade(Sentido: String);
 Var
-  Sql: String;
+  SQL: String;
+  dbPrincipal: TZConnection;
+  qryAtividade: TZQuery;
 begin
-  with dmServidor do
-  begin
-    Application.ProcessMessages;
-    qryAtividade.Active := False;
-    qryAtividade.Close;
-    if Sentido = 'Ligar' then
-      qryAtividade.Sql.Text :=
-        'update Clientes set UltimaDataAtivo='  +''''+ FormatDateTime('yyyy-mm-dd',Date) +''''+ #13 +
-        ',UltimaHoraAtivo= '+''''+ FormatDateTime('hh:mm:ss',Now) +''''+ #13+
-        ',EmailAviso=' + '''' +Sms.edEmailAviso.Text + '''' + #13 + ',CelularAviso=' + '''' +
-        Sms.edCelularAviso.Text + '''' + #13 + ',AvisaInatividade=' +
-        '''Sim''' + #13 + 'where Cnpj=' + '''' + Sms.edCnpj.Text + ''''
-    else
-      qryAtividade.Sql.Text :=
-        'update Clientes set UltimaDataAtivo=' +''''+ FormatDateTime('yyyy-mm-dd',Date) +''''+ #13 +
-        ',UltimaHoraAtivo=' +''''+ FormatDateTime('hh:mm:ss',Now) +''''+ #13 +
-        ',EmailAviso=+''Sem''' + #13 + ',CelularAviso=+''Sem''' + #13 +
-        ',AvisaInatividade=' + '''Não''' + #13 + 'where Cnpj=' + '''' +
-        Sms.edCnpj.Text + '''';
+  Application.ProcessMessages;
+  dbPrincipal := TZConnection.create(nil);
+  dbPrincipal.HostName := 'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+  dbPrincipal.LibraryLocation := 'libmySQL.dll';
+  dbPrincipal.user := 'cadmus182';
+  dbPrincipal.Port := 3306;
+  dbPrincipal.Password := 'cadmus182';
+  dbPrincipal.Database := 'mercurio';
+  dbPrincipal.Protocol := 'mysql-5';
+  dbPrincipal.Connect;
+  qryAtividade := TZQuery.create(nil);
+  qryAtividade.connection := dbPrincipal;
+  if Sentido = 'Ligar' then
+    qryAtividade.SQL.Text :=
+      'update Clientes set UltimaDataAtivo=' + '''' + FormatDateTime
+      ('yyyy-mm-dd', Date) + '''' + #13 + ',UltimaHoraAtivo= ' + '''' +
+      FormatDateTime('hh:mm:ss', Now) + '''' + #13 + ',EmailAviso=' + '''' +
+      Sms.edEmailAviso.Text + '''' + #13 + ',CelularAviso=' + '''' +
+      Sms.edCelularAviso.Text + '''' + #13 + ',AvisaInatividade=' +
+      '''Sim''' + #13 + 'where Cnpj=' + '''' + Sms.edCnpj.Text + ''''
+  else
+    qryAtividade.SQL.Text :=
+      'update Clientes set UltimaDataAtivo=' + '''' + FormatDateTime
+      ('yyyy-mm-dd', Date) + '''' + #13 + ',UltimaHoraAtivo=' + '''' +
+      FormatDateTime('hh:mm:ss', Now) + '''' + #13 + ',EmailAviso=+''Sem''' +
+      #13 + ',CelularAviso=+''Sem''' + #13 + ',AvisaInatividade=' + '''Não''' +
+      #13 + 'where Cnpj=' + '''' + Sms.edCnpj.Text + '''';
 
-    // Sql := qryAtividade.SQL.Text;
-    // Inputquery('','',Sql);
-    try
-      qryAtividade.ExecSQL;
-      Sms.tAvisaQueEstaAtivo.Enabled := true;
-    Except
-    end;
+  // Sql := qryAtividade.SQL.Text;
+  // Inputquery('','',Sql);
+  try
+    qryAtividade.ExecSQL;
+    Sms.tAvisaQueEstaAtivo.Enabled := true;
+    dbPrincipal.Destroy;
+    qryAtividade.Destroy;
+  Except
+    dbPrincipal.Destroy;
+    qryAtividade.Destroy;
+    Sms.tAvisaQueEstaAtivo.Enabled := true;
   end;
 end;
 
@@ -1621,7 +1672,7 @@ var
 begin
   try
     try
-      S := TFileStream.Create(Arquivo, fmOpenRead or fmShareExclusive);
+      S := TFileStream.create(Arquivo, fmOpenRead or fmShareExclusive);
       Result := False;
     except
       on EStreamError do
@@ -1676,7 +1727,7 @@ Var
 begin
   if FileExists(Arquivo) then
   begin
-    Memo := TMemo.Create(nil);
+    Memo := TMemo.create(nil);
     Memo.Parent := Sms;
     Memo.Hide;
     Memo.Lines.LoadFromFile(Arquivo);
@@ -1715,7 +1766,7 @@ var
   ListaNegra: TMemo;
 begin
   Result := False;
-  ListaNegra := TMemo.Create(nil);
+  ListaNegra := TMemo.create(nil);
   ListaNegra.Parent := Sms;
   ListaNegra.Hide;
   if AnsiContainsText(EmailouCelular, '@') and FileExists
@@ -1736,7 +1787,7 @@ Function EscolheOpcaoMsg(Mensagem: String): String;
     ListaAuxUTILS: TStrings;
     NumCaracteres, TamanhoSeparador, i: Integer;
   Begin
-    ListaAuxUTILS := TStringList.Create;
+    ListaAuxUTILS := TStringList.create;
     strItem := '';
     NumCaracteres := Length(Texto);
     TamanhoSeparador := Length(Separador);
@@ -1840,7 +1891,7 @@ end;
 
 procedure BuscaProdutoPedido(Cliente, ParametroFiltro: string);
 var
-  Sql: String;
+  SQL: String;
 begin
   { with dmuPrincipal do begin
     Sql := ' and convert(date,dtpedido,13) = convert(date,DateAdd(Day,'+ '-'+ ParametroFiltro +',getdate()),13) '+#13+
@@ -1856,13 +1907,13 @@ end;
 
 procedure BuscaProdutoOferta(ParametroFiltro: string);
 var
-  Sql: String;
+  SQL: String;
 begin
   with dmuPrincipal do
   begin
-    Sql := ' and CLASSIFCAD.descr=' + '''' + ParametroFiltro + '''';
+    SQL := ' and CLASSIFCAD.descr=' + '''' + ParametroFiltro + '''';
     qryCategoriaOferta.Close;
-    qryCategoriaOferta.Sql[7] := Sql;
+    qryCategoriaOferta.SQL[7] := SQL;
     qryCategoriaOferta.Open;
   end;
 end;
@@ -1994,7 +2045,8 @@ begin
   if ConverteFiltroMarketing(Filtro, ParametroFiltro, ParametroFiltro2,
     ParametroFiltro3) = 'ProdutosEmOferta' then
   begin
-    if Sms.edCnpj.Text = '38542718000182' then
+    if (Sms.edCnpj.Text = '38542718000182') or
+      (Sms.edCnpj.Text = '26859336000106') then
       Result := '  CLIENTECAD.OID in ' + #13 + '(select           ' + #13 +
         '  DISTINCT PEDICLICAD.CODCLIE ' + #13 +
         'from                                ' + #13 +
@@ -2273,15 +2325,15 @@ begin
     Procedure RecuperarTelas;
       Procedure IniciaCampos;
       begin
-        Campo1 := TStringList.Create;
-        Campo2 := TStringList.Create;
-        Campo3 := TStringList.Create;
-        Campo4 := TStringList.Create;
-        Campo5 := TStringList.Create;
-        Campo6 := TStringList.Create;
-        Campo7 := TStringList.Create;
-        Campo8 := TStringList.Create;
-        Campo9 := TStringList.Create;
+        Campo1 := TStringList.create;
+        Campo2 := TStringList.create;
+        Campo3 := TStringList.create;
+        Campo4 := TStringList.create;
+        Campo5 := TStringList.create;
+        Campo6 := TStringList.create;
+        Campo7 := TStringList.create;
+        Campo8 := TStringList.create;
+        Campo9 := TStringList.create;
       end;
       Procedure LendoArquivos(Arquivo: String);
       Var
@@ -2593,7 +2645,7 @@ begin
       if VersaoExe <> VersaoFtp then
       begin
         Result := true;
-        NovidadesVersao := TStringList.Create;
+        NovidadesVersao := TStringList.create;
         try
           BaixaFtp('NovidadesVersao.txt');
         except
@@ -2792,7 +2844,8 @@ begin
     begin
       Result := '';
       dmuPrincipal.qryCelularVenda.Close;
-      dmuPrincipal.qryCelularVenda.Parameters.ParamByName('Cliente').Value := Cliente;
+      dmuPrincipal.qryCelularVenda.Parameters.ParamByName('Cliente')
+        .Value := Cliente;
       dmuPrincipal.qryCelularVenda.Open;
       dmuPrincipal.qryCelularVenda.First;
       while not dmuPrincipal.qryCelularVenda.Eof do
@@ -3073,47 +3126,47 @@ begin
       ParametroFiltro2, ParametroFiltro3: String);
     var
       Clientes: TMemo;
-      Sql: String;
+      SQL: String;
     begin
       if NEnviarEnviados = 'Sim' then
       begin
-        Clientes := TMemo.Create(nil);
+        Clientes := TMemo.create(nil);
         Clientes.Parent := Sms;
         Clientes.Hide;
-        dmuPrincipal.qryRelClientes.Sql.Clear;
+        dmuPrincipal.qryRelClientes.SQL.Clear;
         if FileExists('JaEnviados.txt') then
           Clientes.Lines.LoadFromFile('JaEnviados.txt');
       end;
       dmuPrincipal.qryRelClientes.Close;
       if (Filtrar = 'Sim') and (NEnviarEnviados = 'Sim') then
-        dmuPrincipal.qryRelClientes.Sql.Text :=
+        dmuPrincipal.qryRelClientes.SQL.Text :=
           'select oid,NOME,RAZSOC from CLIENTECAD where  ' +
           FiltroClienteMarketing(Filtro, ParametroFiltro, ParametroFiltro2,
           ParametroFiltro3);
       if (Filtrar = 'Sim') and (NEnviarEnviados = 'Não') then
-        dmuPrincipal.qryRelClientes.Sql.Text :=
+        dmuPrincipal.qryRelClientes.SQL.Text :=
           'select oid,NOME,RAZSOC from CLIENTECAD where ' +
           FiltroClienteMarketing(Filtro, ParametroFiltro, ParametroFiltro2,
           ParametroFiltro3);
       if (Filtrar = 'Não') and (NEnviarEnviados = 'Sim') then
-        dmuPrincipal.qryRelClientes.Sql.Text :=
+        dmuPrincipal.qryRelClientes.SQL.Text :=
           'select oid,NOME,RAZSOC from CLIENTECAD ';
       if (Filtrar = 'Não') and (NEnviarEnviados = 'Não') then
-        dmuPrincipal.qryRelClientes.Sql.Text :=
+        dmuPrincipal.qryRelClientes.SQL.Text :=
           'select oid,NOME,RAZSOC from CLIENTECAD ';
       if Filtro = 'Comprou No Periodo' then
       begin
-        Sql := dmuPrincipal.qryRelClientes.Sql.Text;
+        SQL := dmuPrincipal.qryRelClientes.SQL.Text;
         // inputquery('Copie e envie este codigo por Email ao suporte','SimplesSms@gmail.com',Sql);
-        Sms.CriaArquivoTxt('sqlprodutosempromocaoperiodo.txt', Sql);
+        Sms.CriaArquivoTxt('sqlprodutosempromocaoperiodo.txt', SQL);
       end;
       Try
         dmuPrincipal.qryRelClientes.Open;
       Except
         Sms.tVerificaAgendamentos.Enabled := False;
-        Sql := dmuPrincipal.qryRelClientes.Sql.Text;
+        SQL := dmuPrincipal.qryRelClientes.SQL.Text;
         inputquery('Copie e envie este codigo por Email ao suporte',
-          'SimplesSms@gmail.com', Sql);
+          'SimplesSms@gmail.com', SQL);
         Sms.tVerificaAgendamentos.Enabled := true;
       end;
     end;
@@ -3162,42 +3215,10 @@ begin
       CloseFile(Arq);
     end;
 
-    procedure SalvarArquivoHistorico(Linha: String);
-    Var
-      Dia, Mes, Ano: Integer;
-      Data: TDateTime;
-      ArquivoDia, ArquivoMes: TextFile;
-    begin
-      Data := StrToDate(FormatDateTime('dd/mm/yyyy', Date));
-      Dia := DayOf(Data);
-      Mes := MonthOF(Data);
-      Ano := YearOf(Data);
-      if not DirectoryExists(IntToStr(Ano)) then
-        CreateDir(IntToStr(Ano));
-      if not DirectoryExists(IntToStr(Ano) + '\' + IntToStr(Mes)) then
-        CreateDir(IntToStr(Ano) + '\' + IntToStr(Mes));
-      AssignFile(ArquivoDia, (IntToStr(Ano) + '\' + IntToStr(Mes))
-          + '\' + IntToStr(Dia) + '.txt');
-      if FileExists((IntToStr(Ano) + '\' + IntToStr(Mes)) + '\' + IntToStr(Dia)
-          + '.txt') then
-        Append(ArquivoDia)
-      else
-        Rewrite(ArquivoDia);
-      Writeln(ArquivoDia, Linha);
-      CloseFile(ArquivoDia);
-      AssignFile(ArquivoMes, (IntToStr(Ano) + '\' + IntToStr(Mes) + '.txt'));
-      if FileExists((IntToStr(Ano) + '\' + IntToStr(Mes) + '.txt')) then
-        Append(ArquivoMes)
-      else
-        Rewrite(ArquivoMes);
-      Writeln(ArquivoMes, Linha);
-      CloseFile(ArquivoMes);
-    end;
-
     procedure TSms.btIniciaPromocaoClick(Sender: TObject);
     var
       Contador: Integer;
-      Mensagem, Celular, Comando, Sql, ParametroFiltro, ParametroFiltro2,
+      Mensagem, Celular, Comando, SQL, ParametroFiltro, ParametroFiltro2,
         ParametroFiltro3: String;
       Texto: PansiChar;
       Arq, ArqEmail: TextFile;
@@ -3327,10 +3348,8 @@ begin
               mmListaEnviados.Lines.Add('Sms Maketing ' + FormatDateTime
                   ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
                   Time) + '-' + Celular + ' ' + Mensagem);
-              SalvarArquivoHistorico('Sms Marketing ' + FormatDateTime
-                  ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
-                  Time) + '-' + Celular + ' ' + Mensagem);
             end;
+
           end;
           Contador := Contador + 1;
           { if ckNEnviarNEnviados.Checked then
@@ -3338,6 +3357,7 @@ begin
             if dmuPrincipal.qryCelulares['IdCliente'] <>  null then
             CriaListaJaEnviados(dmuPrincipal.qryCelulares['IdCliente'] );
             end; }
+
           lbEnviadosPromocao.Caption := IntToStr
             (1 + StrToInt(lbEnviadosPromocao.Caption));
           NumeroSmsEnviadosAgora := NumeroSmsEnviadosAgora + 1;
@@ -3540,29 +3560,9 @@ begin
       end;
     end;
 
-    procedure InsereCobrancaSms(Celular, Mensagem: String);
-    begin
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryCobrancaSms.Active := False;
-        qryCobrancaSms.Active := true;
-        qryCobrancaSms.Active := False;
-        qryCobrancaSms.Active := true;
-        qryCobrancaSms.Insert;
-        qryCobrancaSms['Cnpj'] := Sms.edCnpj.Text;
-        qryCobrancaSms['Celular'] := Celular;
-        qryCobrancaSms['Enviado'] := 0;
-        qryCobrancaSms['Mensagem'] := Mensagem;
-        qryCobrancaSms['Tipo'] := 'S';
-        qryCobrancaSms.Post;
-        qryCobrancaSms.Active := False;
-      end;
-    end;
-
     procedure BuscarInadimplentes;
     var
-      LTipo, Sql: String;
+      LTipo, SQL: String;
       Contador: Integer;
       Arq: TextFile;
     begin
@@ -3575,29 +3575,29 @@ begin
       with dmuPrincipal do
       begin
         qryInadimplentes.Close;
-        qryInadimplentes.Sql[7] := 'AND NTIPO IN (' + LTipo + ')';
+        qryInadimplentes.SQL[7] := 'AND NTIPO IN (' + LTipo + ')';
         if Trim(Sms.mmListaNEnviarCobranca.Text) = '' then
-          qryInadimplentes.Sql[8] := ''
+          qryInadimplentes.SQL[8] := ''
         else
-          qryInadimplentes.Sql[8] := 'AND NCLIENTE NOT IN (' + Trim
+          qryInadimplentes.SQL[8] := 'AND NCLIENTE NOT IN (' + Trim
             (Sms.mmListaNEnviarCobranca.Text) + ')';
-        qryInadimplentes.Sql[9] :=
+        qryInadimplentes.SQL[9] :=
           'and DATEDIFF(DAY,VENCIMENTO,GETDATE())  >= ' +
           Sms.edMinDiasVencidos.Text
           + ' and  DATEDIFF(DAY,VENCIMENTO,GETDATE())   <= ' + (Sms.edMaxDiasVencidos.Text);
-        qryInadimplentes.Sql[10] := 'and VALORNAMOEDA1-CREDITOACUMULADO >' +
+        qryInadimplentes.SQL[10] := 'and VALORNAMOEDA1-CREDITOACUMULADO >' +
           (Sms.edMinValorVencido.Text);
         if Sms.ckLimitaFiliaisCobranca.Checked then
-          qryInadimplentes.Sql[11] :=
+          qryInadimplentes.SQL[11] :=
             'And FILIALCAD.Filial in (' + Sms.edFiliaisCobranca.Text + ')'
         else
-          qryInadimplentes.Sql[11] := '';
+          qryInadimplentes.SQL[11] := '';
         Try
           qryInadimplentes.Open;
         Except
-          Sql := qryInadimplentes.Sql.Text;
+          SQL := qryInadimplentes.SQL.Text;
           inputquery('Copie este codigo e envie ao suporte por email',
-            'SimplesSms@gmail.com.br', Sql);
+            'SimplesSms@gmail.com.br', SQL);
         end;
       end;
     end;
@@ -3607,7 +3607,7 @@ begin
       LTipo: String;
       Contador: Integer;
     var
-      Sql: String;
+      SQL: String;
     begin
       Contador := 0;
       while Contador <= Sms.mmListaTipoDocumentoAvisoVencimento.Lines.Count do
@@ -3619,19 +3619,19 @@ begin
       with dmuPrincipal do
       begin
         qryParcelasVencer.Close;
-        qryParcelasVencer.Sql[15] := 'NTIPO IN (' + LTipo + ')';
+        qryParcelasVencer.SQL[15] := 'NTIPO IN (' + LTipo + ')';
         if Trim(Sms.mmListaNegraAvisoVencimento.Text) = '' then
-          qryParcelasVencer.Sql[16] := ''
+          qryParcelasVencer.SQL[16] := ''
         else
-          qryParcelasVencer.Sql[16] := 'AND NCLIENTE NOT IN (' + Trim
+          qryParcelasVencer.SQL[16] := 'AND NCLIENTE NOT IN (' + Trim
             (Sms.mmListaNegraAvisoVencimento.Text) + ')';
-        qryParcelasVencer.Sql[17] :=
+        qryParcelasVencer.SQL[17] :=
           'and abs(DATEDIFF(DAY,VENCIMENTO,GETDATE()))  <= ' +
           Sms.edMinDiasAvisoVencimento.Text;
-        qryParcelasVencer.Sql[18] :=
+        qryParcelasVencer.SQL[18] :=
           'and abs(DATEDIFF(DAY,VENCIMENTO,GETDATE()))   >= ' +
           (Sms.edMaxDiasAvisoVencimento.Text);
-        qryParcelasVencer.Sql[19] := 'and VALORNAMOEDA1-CREDITOACUMULADO >' +
+        qryParcelasVencer.SQL[19] := 'and VALORNAMOEDA1-CREDITOACUMULADO >' +
           (Sms.edValorAvisoVencimento.Text);
         // Sql := qryParcelasVencer.SQL.Text;
         // InputQuery('','',Sql);
@@ -3693,7 +3693,7 @@ begin
           end;
           if not EstaNaListaNegra(Celular) then
           begin
-            InsereCobrancaSms(Celular, Mensagem);
+            InsereSms(Celular, Mensagem);
           end;
           if not VerificaInternet then
           Begin
@@ -4066,35 +4066,6 @@ begin
       SalvarStatusBotao(btAtivaDesativaEntrega);
     end;
 
-    procedure InsereEntregaSms(Celular, Mensagem: String);
-    begin
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryEntregaSms.Active := False;
-        qryEntregaSms.Active := true;
-        qryEntregaSms.Active := False;
-        qryEntregaSms.Active := true;
-        qryEntregaSms.Insert;
-        qryEntregaSms['Cnpj'] := Sms.edCnpj.Text;
-        qryEntregaSms['Celular'] := Celular;
-        qryEntregaSms['Enviado'] := 0;
-        qryEntregaSms['Mensagem'] := Mensagem;
-        qryEntregaSms['Tipo'] := 'S';
-        try
-          qryEntregaSms.Post;
-        Except
-          Sms.tVerificaEntrega.Enabled := true;
-        end;
-        Try
-          qryEntregaSms.ApplyUpdates();
-        Except
-          Sms.tVerificaEntrega.Enabled := true;
-        end;
-        qryEntregaSms.Active := False;
-      end;
-    end;
-
     procedure TSms.btIniciarEntregaClick(Sender: TObject);
     var
       Contador: Integer;
@@ -4144,7 +4115,7 @@ begin
           end;
           if not EstaNaListaNegra(Celular) then
           begin
-            InsereEntregaSms(Celular, Mensagem);
+            InsereSms(Celular, Mensagem);
           end;
           if not VerificaInternet then
           begin
@@ -4352,13 +4323,13 @@ begin
 
     Function BuscaEntregas(UltimaEntrega: String): Boolean;
     var
-      Sql: String;
+      SQL: String;
     begin
       Result := False;
       dmuPrincipal.qryEntregas.Close;
-      dmuPrincipal.qryEntregas.Sql[8] :=
+      dmuPrincipal.qryEntregas.SQL[8] :=
         'and serie like ' + '''%' + Sms.edNomeSerie.Text + '%''';
-      dmuPrincipal.qryEntregas.Sql[13] :=
+      dmuPrincipal.qryEntregas.SQL[13] :=
         'and convert(nvarchar(5),Dateadd(MI,' +
         Sms.edEsperaEnvio.Text +
         ',c.DtEmis),108) < = convert(nvarchar(5),GETDATE(),108)';
@@ -4385,7 +4356,7 @@ begin
     procedure TSms.tVerificaEntregaTimer(Sender: TObject);
     Var
       MaxSms: Integer;
-      Sql: String;
+      SQL: String;
     begin
       if rgMaxSmsEntrega.ItemIndex = 0 then
         MaxSms := 900000000
@@ -4405,10 +4376,10 @@ begin
                 begin
                   dmuPrincipal.qryUltimaNota.Close;
                   if ckUsaSerie.Checked then
-                    dmuPrincipal.qryUltimaNota.Sql[2] :=
+                    dmuPrincipal.qryUltimaNota.SQL[2] :=
                       'and serie like ' + '''%' + Sms.edNomeSerie.Text + '%'''
                   else
-                    dmuPrincipal.qryUltimaNota.Sql[2] := '';
+                    dmuPrincipal.qryUltimaNota.SQL[2] := '';
                   dmuPrincipal.qryUltimaNota.Open;
                   // Sql :=  dmuPrincipal.qryUltimaNota.SQL.Text;
                   // inputquery('Sql ultima nota','',Sql);
@@ -4440,7 +4411,7 @@ begin
     var
       Texto: TMemo;
     begin
-      Texto := TMemo.Create(Nil);
+      Texto := TMemo.create(Nil);
       Texto.Parent := Sms;
       Texto.Lines.Add(Sms.mmMensagemSatisfacao.Text);
       // Texto.Lines.Add('');
@@ -4453,34 +4424,6 @@ begin
       Texto.Lines.Add('3 - P/ Ruim :-(');
       Result := Texto.Text;
       Texto.Destroy;
-    end;
-
-    procedure InserePesquisaSatisfacaoSms(Celular, Mensagem: String);
-    begin
-      with dmServidor do
-      begin
-        qryPesquisaSatisfacao.Active := False;
-        qryPesquisaSatisfacao.Active := true;
-        qryPesquisaSatisfacao.Insert;
-        qryPesquisaSatisfacao['Cnpj'] := Sms.edCnpj.Text;
-        qryPesquisaSatisfacao['Celular'] := Celular;
-        qryPesquisaSatisfacao['Enviado'] := 0;
-        qryPesquisaSatisfacao['Mensagem'] := Mensagem;
-        qryPesquisaSatisfacao['Tipo'] := 'S';
-        Try
-          qryPesquisaSatisfacao.Post;
-        Except
-          Sms.tVerificaPesquisaDeSatisfacao.Enabled := true;
-          Sms.tVerificaRepostaPesquisa.Enabled := true;
-        end;
-        Try
-          qryPesquisaSatisfacao.ApplyUpdates;
-        Except
-          Sms.tVerificaPesquisaDeSatisfacao.Enabled := true;
-          Sms.tVerificaRepostaPesquisa.Enabled := true;
-        end;
-        qryPesquisaSatisfacao.Active := False;
-      end;
     end;
 
     procedure EnviaSmsPesquisaSatisfacao(CodClie, Nome, Tipo: String);
@@ -4509,7 +4452,7 @@ begin
         end;
         if not EstaNaListaNegra(Celular) then
         begin
-          InserePesquisaSatisfacaoSms(Celular, Mensagem);
+          Sms.InsereSms(Celular, Mensagem);
         end;
         if not VerificaInternet then
         begin
@@ -4533,9 +4476,7 @@ begin
               ('Sms PesquisaSatisfação - ' + FormatDateTime('dd/mm/yyyy',
                 Date) + '-' + FormatDateTime('hh:mm:ss',
                 Time) + '-' + Celular + ' ' + Mensagem);
-            SalvarArquivoHistorico('Sms PesquisaSatisfação - ' + FormatDateTime
-                ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
-                Time) + '-' + Celular + ' ' + Mensagem);
+
           end;
         end;
         Sms.lbSmsEnviadosPesquisaSatisfacao.Caption := IntToStr
@@ -4845,7 +4786,7 @@ begin
         Sms.tVerificaAgendamentos.Enabled := False;
         tVerificaRespostasSms.Enabled := False;
         dmuPrincipal.dbPrincipal.Connected := False;
-        log('desativou as querys e deixou os botoes em enable')
+        Log('desativou as querys e deixou os botoes em enable')
       end;
     end;
 
@@ -4854,7 +4795,7 @@ begin
       Reg: TRegistry;
       S: string;
     begin
-      Reg := TRegistry.Create(KEY_WRITE);
+      Reg := TRegistry.create(KEY_WRITE);
       S := ExtractFileDir(Application.ExeName) + '\' + ExtractFileName
         (Application.ExeName);
       Reg.rootkey := HKEY_LOCAL_MACHINE;
@@ -4869,7 +4810,7 @@ begin
       Reg: TRegistry;
       S: string;
     begin
-      Reg := TRegistry.Create(KEY_WRITE);
+      Reg := TRegistry.create(KEY_WRITE);
       S := ExtractFileDir(Application.ExeName) + '\' + ExtractFileName
         (Application.ExeName);
       Reg.rootkey := HKEY_LOCAL_MACHINE;
@@ -4888,7 +4829,8 @@ begin
       end
       else
       begin
-        ConectaBancoDeDados(edUsuario.Text, edSenha.Text, edBancoDeDados.Text,edInstancia.Text);
+        ConectaBancoDeDados(edUsuario.Text, edSenha.Text, edBancoDeDados.Text,
+          edInstancia.Text);
       end;
       dmServidor.AtivarConexoes;
     end;
@@ -4941,9 +4883,13 @@ begin
       FerramentaAtiva := False;
       For i := 0 to Sms.ComponentCount - 1 do
       begin
-        if (Sms.Components[i] is TCheckBox) then
-          if VerificaReativar(TCheckBox(Sms.Components[i]).Name) then
-            TCheckBox(Sms.Components[i]).Checked := true;
+        try
+          if (Sms.Components[i] is TCheckBox) then
+            if VerificaReativar(TCheckBox(Sms.Components[i]).Name) then
+              TCheckBox(Sms.Components[i]).Checked := true;
+        except
+          Sms.Log('erro no check ' + IntToStr(i));
+        end;
       end;
     end;
 
@@ -4953,11 +4899,15 @@ begin
     begin
       For i := 0 to Sms.ComponentCount - 1 do
       begin
-        if (Sms.Components[i] is TMemo) then
-          if FileExists(TMemo(Sms.Components[i]).Name + '.txt') then
+        try
+          if (Sms.Components[i] is TMemo) then
+            if FileExists(TMemo(Sms.Components[i]).Name + '.txt') then
   (TMemo(Sms.Components[i]).Lines.LoadFromFile(TMemo(Sms.Components[i])
-                  .Name + '.txt'))
-            ;
+                    .Name + '.txt'))
+              ;
+        except
+          Sms.Log('erro no memo ' + IntToStr(i));
+        end;
       end;
     end;
 
@@ -4988,21 +4938,21 @@ begin
       with Sms do
       begin
         edInstancia.Text := Linha1;
-        log('Leu a Instancia');
+        Log('Leu a Instancia');
         edBancoDeDados.Text := Linha2;
-        log('Leu  o nome do banco');
+        Log('Leu  o nome do banco');
         edUsuario.Text := Linha3;
-        log('Leu o usuario');
+        Log('Leu o usuario');
         edSenha.Text := Criptografia(Linha4, '236');
-        log('Leu a senha');
+        Log('Leu a senha');
         edCnpj.Text := Linha6;
-        log('Leu o cnpj');
+        Log('Leu o cnpj');
         if Linha5 = 'True' then
         begin
           ckManterConectado.Checked := true;
-          log('ativou manter conectado');
+          Log('ativou manter conectado');
           btConectaBancoDeDados.Click;
-          log('clicou em conectar banco');
+          Log('clicou em conectar banco');
           pcListas.Show;
           gbListaEnviados.Show;
         end
@@ -5040,8 +4990,8 @@ begin
     procedure ConectarBancoServidor;
     begin
       Try
-        dmServidor.dbPrincipal.Disconnect;
-        dmServidor.dbPrincipal.Connect;
+        // dmServidor.dbPrincipal.Disconnect;
+        // dmServidor.dbPrincipal.Connect;
       Except
         // ShowMessage('A Ferramenta Não Conseguiu se Conectar ao Servidor');
       End;
@@ -5099,9 +5049,9 @@ begin
         // colocar if
         try
           RecarregandoStringGridListaExterna;
-          log('Carregou a Lista externa');
+          Log('Carregou a Lista externa');
         Except
-          log('Não Carregou a Lista externa');
+          Log('Não Carregou a Lista externa');
         end;
         Log('Recarregou os Agendamentos');
         PreencherPermissaoDeDiasDeEnvio;
@@ -5122,6 +5072,7 @@ begin
         Log('Recuperou configuração banco');
         ReativarAtivos;
         Log('Reativou os ativos');
+
       end;
     end;
 
@@ -5293,26 +5244,6 @@ begin
         IntToStr(rgOpcaoDeEnvioEmail.ItemIndex), '', '', '', '', '');
     end;
 
-    procedure InsereAniversarioSms(Celular, Mensagem: String);
-    begin
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryAniversarioSms.Active := False;
-        qryAniversarioSms.Active := true;
-        qryAniversarioSms.Active := False;
-        qryAniversarioSms.Active := true;
-        qryAniversarioSms.Insert;
-        qryAniversarioSms['Cnpj'] := Sms.edCnpj.Text;
-        qryAniversarioSms['Celular'] := Celular;
-        qryAniversarioSms['Enviado'] := 0;
-        qryAniversarioSms['Mensagem'] := Mensagem;
-        qryAniversarioSms['Tipo'] := 'S';
-        qryAniversarioSms.Post;
-        qryAniversarioSms.Active := False;
-      end;
-    end;
-
     procedure TSms.btIniciarAniversarioClick(Sender: TObject);
     var
       Contador: Integer;
@@ -5358,7 +5289,7 @@ begin
           end;
           if not EstaNaListaNegra(Celular) then
           begin
-            InsereAniversarioSms(Celular, Mensagem);
+            InsereSms(Celular, Mensagem);
           end;
           if not VerificaInternet then
           begin
@@ -5380,9 +5311,7 @@ begin
               mmListaEnviados.Lines.Add('Sms Aniversariante - ' + FormatDateTime
                   ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
                   Time) + '-' + Celular + ' ' + Mensagem);
-              SalvarArquivoHistorico('Sms Aniversariante - ' + FormatDateTime
-                  ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
-                  Time) + '-' + Celular + ' ' + Mensagem);
+
             end;
           end;
           Contador := Contador + 1;
@@ -5509,35 +5438,6 @@ begin
       SalvarStatusBotao(btAtivarDesativarAniversario);
     end;
 
-    procedure InsereCargaSms(Celular, Mensagem: String);
-    begin
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryCargaSms.Active := False;
-        qryCargaSms.Active := true;
-        qryCargaSms.Active := False;
-        qryCargaSms.Active := true;
-        qryCargaSms.Insert;
-        qryCargaSms['Cnpj'] := Sms.edCnpj.Text;
-        qryCargaSms['Celular'] := Celular;
-        qryCargaSms['Enviado'] := 0;
-        qryCargaSms['Mensagem'] := Mensagem;
-        qryCargaSms['Tipo'] := 'S';
-        try
-          qryCargaSms.Post;
-        Except
-          Sms.tVerificaEntrega.Enabled := true;
-        end;
-        Try
-          qryCargaSms.ApplyUpdates();
-        Except
-          Sms.tVerificaEntrega.Enabled := true;
-        end;
-        qryCargaSms.Active := False;
-      end;
-    end;
-
     procedure TSms.btInciaCargaClick(Sender: TObject);
     var
       Contador: Integer;
@@ -5579,7 +5479,7 @@ begin
           end;
           if not EstaNaListaNegra(Celular) then
           begin
-            InsereCargaSms(Celular, Mensagem);
+            InsereSms(Celular, Mensagem);
           end;
           if not VerificaInternet then
           begin
@@ -5805,7 +5705,7 @@ begin
           while not Eof(Arq) do
           begin
             Readln(Arq, Linha);
-            mItem := TMenuItem.Create(Self);
+            mItem := TMenuItem.create(Self);
             mItem.Caption := Linha;
             mItem.OnClick := ItemClickMarketing;
             mnExemplosMarketing.Items.Add(mItem);
@@ -5839,7 +5739,7 @@ begin
           while not Eof(Arq) do
           begin
             Readln(Arq, Linha);
-            mItem := TMenuItem.Create(Self);
+            mItem := TMenuItem.create(Self);
             mItem.Caption := Linha;
             mItem.OnClick := ItemClickCobranca;
             mmExemplosCobranca.Items.Add(mItem);
@@ -5873,7 +5773,7 @@ begin
           while not Eof(Arq) do
           begin
             Readln(Arq, Linha);
-            mItem := TMenuItem.Create(Self);
+            mItem := TMenuItem.create(Self);
             mItem.Caption := Linha;
             mItem.OnClick := ItemClickEntrega;
             mmExemplosEntrega.Items.Add(mItem);
@@ -5907,7 +5807,7 @@ begin
           while not Eof(Arq) do
           begin
             Readln(Arq, Linha);
-            mItem := TMenuItem.Create(Self);
+            mItem := TMenuItem.create(Self);
             mItem.Caption := Linha;
             mItem.OnClick := ItemClickAniversariante;
             mmExemplosAniversariante.Items.Add(mItem);
@@ -6327,13 +6227,17 @@ begin
     begin
       Result := False;
       InicioValido := '7,8,9';
-      if (Length(Celular) = 8) and AnsiContainsStr(InicioValido, Celular[1])  then
+      if (Length(Celular) = 8) and AnsiContainsStr(InicioValido, Celular[1])
+        then
         Result := true;
-      if (Length(Celular) = 10) and AnsiContainsStr(InicioValido, Celular[3]) then
+      if (Length(Celular) = 10) and AnsiContainsStr(InicioValido, Celular[3])
+        then
         Result := true;
-      if (Length(Celular) = 11) and AnsiContainsStr(InicioValido, Celular[4]) then
+      if (Length(Celular) = 11) and AnsiContainsStr(InicioValido, Celular[4])
+        then
         Result := true;
-      if (Length(Celular) = 12) and AnsiContainsStr(InicioValido, Celular[5]) then
+      if (Length(Celular) = 12) and AnsiContainsStr(InicioValido, Celular[5])
+        then
         Result := true;
     end;
 
@@ -6517,39 +6421,50 @@ begin
 
     end;
 
-    procedure TSms.ckCopiaSmsRespostaClick(Sender: TObject);
+procedure TSms.ckCopiaSmsRespostaClick(Sender: TObject);
 
-      procedure GravaCelularSmsRecebido(Celular: String);
-      begin
-        Application.ProcessMessages;
-        dmServidor.qryAtividade.Active := False;
-        dmServidor.qryAtividade.Close;
-        dmServidor.qryAtividade.Sql.Text :=
-          'update Clientes set CelularResposta=' + '''' +
-          Sms.edCelularCopiaResposta.Text + '''' + #13 + 'where Cnpj=' +
-          '''' + Sms.edCnpj.Text + '''';
-        dmServidor.qryAtividade.ExecSQL;
-      end;
+  procedure GravaCelularSmsRecebido(Celular: String);
+  Var
+    dbPrincipal: TZConnection;
+    qryAtividade: TZQuery;
+  begin
+    Application.ProcessMessages;
+    dbPrincipal := TZConnection.create(nil);
+    dbPrincipal.HostName := 'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+    dbPrincipal.LibraryLocation := 'libmySQL.dll';
+    dbPrincipal.user := 'cadmus182';
+    dbPrincipal.Port := 3306;
+    dbPrincipal.Password := 'cadmus182';
+    dbPrincipal.Database := 'mercurio';
+    dbPrincipal.Protocol := 'mysql-5';
+    dbPrincipal.Connect;
+    qryAtividade := TZQuery.create(nil);
+    qryAtividade.connection := dbPrincipal;
+    qryAtividade.SQL.Text :=
+    'update Clientes set CelularResposta=' + '''' +
+    Sms.edCelularCopiaResposta.Text + '''' + #13 + 'where Cnpj=' +
+    '''' + Sms.edCnpj.Text + '''';
+  end;
 
+begin
+  if ckCopiaSmsResposta.Checked then
+  begin
+    if (edCelularCopiaResposta.Text <> '') and
+      (Length(edCelularCopiaResposta.Text) > 10) then
     begin
-      if ckCopiaSmsResposta.Checked then
-      begin
-        if (edCelularCopiaResposta.Text <> '') and
-          (Length(edCelularCopiaResposta.Text) > 10) then
-        begin
-          AbasteceListaAtivados(ckCopiaSmsResposta);
-          SalvaEdit(edCelularCopiaResposta);
-          edCelularCopiaResposta.Enabled := False;
-        end
-        else
-        begin
-          ckCopiaSmsResposta.Checked := False;
-          edCelularCopiaResposta.Enabled := true;
-          ShowMessage('Insira um Celular Valido');
-        end;
-      end;
-      GravaCelularSmsRecebido(Sms.edCelularCopiaResposta.Text);
+      AbasteceListaAtivados(ckCopiaSmsResposta);
+      SalvaEdit(edCelularCopiaResposta);
+      edCelularCopiaResposta.Enabled := False;
+    end
+    else
+    begin
+      ckCopiaSmsResposta.Checked := False;
+      edCelularCopiaResposta.Enabled := true;
+      ShowMessage('Insira um Celular Valido');
     end;
+  end;
+  GravaCelularSmsRecebido(Sms.edCelularCopiaResposta.Text);
+end;
 
     procedure TSms.ckControleSmsCobrancaClick(Sender: TObject);
     begin
@@ -6890,34 +6805,6 @@ begin
 
     procedure TSms.tVerificaAgendamentosTimer(Sender: TObject);
 
-      procedure InsereAgenamentoSms(Celular, Mensagem: String);
-      begin
-        with dmServidor do
-        begin
-          Application.ProcessMessages;
-          qryAgendamentoSms.Active := False;
-          qryAgendamentoSms.Active := true;
-          qryAgendamentoSms.Insert;
-          qryAgendamentoSms['Cnpj'] := edCnpj.Text;
-          qryAgendamentoSms['Celular'] := Celular;
-          qryAgendamentoSms['Enviado'] := 0;
-          qryAgendamentoSms['Mensagem'] := Mensagem;
-          qryAgendamentoSms['Tipo'] := 'S';
-          Try
-            qryAgendamentoSms.Post;
-          except
-            tVerificaAgendamentos.Enabled := true;
-          end;
-          Try
-            qryAgendamentoSms.ApplyUpdates;
-          except
-            tVerificaAgendamentos.Enabled := true;
-          end;
-          qryAgendamentoSms.Active := False;
-          qryAgendamentoSms.Active := False;
-        end;
-      end;
-
       procedure EnviaAgendamentoPromocao(NumeroSms: Integer;
         Filtro, ParametroFiltro, ParametroFiltro2, Msg, Limitar, Filtrar,
         EnviarNEnviados, ParametroFiltro3: String);
@@ -6992,7 +6879,7 @@ begin
             end;
             if not EstaNaListaNegra(Celular) then
             begin
-              InsereAgenamentoSms(Celular, Mensagem);
+              InsereSms(Celular, Mensagem);
             end;
             if not VerificaInternet then
             begin
@@ -7013,9 +6900,6 @@ begin
               else
               begin
                 mmListaEnviados.Lines.Add('Sms Maketing - ' + FormatDateTime
-                    ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
-                    Time) + '-' + Celular + ' ' + Mensagem);
-                SalvarArquivoHistorico('Sms Marketing - ' + FormatDateTime
                     ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
                     Time) + '-' + Celular + ' ' + Mensagem);
               end;
@@ -7319,7 +7203,7 @@ begin
               copy(Sms.sgListaExterna.Cells[0, Contador], 1, 40));
             if not EstaNaListaNegra(Celular) then
             begin
-              InsereAgenamentoSms(Celular, Mensagem);
+              InsereSms(Celular, Mensagem);
             end;
             if EstaNaListaNegra(Celular) then
               mmListaEnviados.Lines.Add(
@@ -7529,8 +7413,12 @@ begin
       if (PermitidaVerificacaoNodia) then
       begin
         tVerificaAgendamentos.Enabled := False;
-        VerificaAgendamento;
-        tVerificaAgendamentos.Enabled := true;
+        try
+          VerificaAgendamento;
+          tVerificaAgendamentos.Enabled := true;
+        except
+          tVerificaAgendamentos.Enabled := true;
+        end;
       end;
     end;
 
@@ -7664,60 +7552,6 @@ begin
       SalvaEdit(edEmailEnvio);
     end;
 
-    procedure InsereVendaSms(Celular, Mensagem: String);
-    begin
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryVendaSms.Active := False;
-        qryVendaSms.Active := true;
-        qryVendaSms.Insert;
-        qryVendaSms['Cnpj'] := Sms.edCnpj.Text;
-        qryVendaSms['Celular'] := Celular;
-        qryVendaSms['Enviado'] := 0;
-        qryVendaSms['Mensagem'] := Mensagem;
-        qryVendaSms['Tipo'] := 'S';
-        Try
-          qryVendaSms.Post;
-        Except
-          Sms.tVerificaVendaOrcamento.Enabled := true;
-        end;
-        Try
-          qryVendaSms.ApplyUpdates;
-        Except
-          Sms.tVerificaVendaOrcamento.Enabled := true;
-        end;
-        qryVendaSms.Active := False;
-      end;
-    end;
-
-    procedure InsereConfirmacaoEntregaSms(Celular, Mensagem: String);
-    begin
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryConfirmacaoEntregaSms.Active := False;
-        qryConfirmacaoEntregaSms.Active := true;
-        qryConfirmacaoEntregaSms.Insert;
-        qryConfirmacaoEntregaSms['Cnpj'] := Sms.edCnpj.Text;
-        qryConfirmacaoEntregaSms['Celular'] := Celular;
-        qryConfirmacaoEntregaSms['Enviado'] := 0;
-        qryConfirmacaoEntregaSms['Mensagem'] := Mensagem;
-        qryConfirmacaoEntregaSms['Tipo'] := 'S';
-        Try
-          qryConfirmacaoEntregaSms.Post;
-        Except
-          Sms.tVerificaVendaOrcamento.Enabled := true;
-        end;
-        Try
-          qryConfirmacaoEntregaSms.ApplyUpdates;
-        Except
-          Sms.tVerificaConfirmacaoEntrega.Enabled := true;
-        end;
-        qryConfirmacaoEntregaSms.Active := False;
-      end;
-    end;
-
     procedure TSms.btIniciarVendaClick(Sender: TObject);
     var
       Contador: Integer;
@@ -7741,7 +7575,7 @@ begin
         end;
         if not EstaNaListaNegra(Celular) then
         begin
-          InsereVendaSms(Celular, Mensagem);
+          InsereSms(Celular, Mensagem);
         end;
         // CloseFile(arq);
         if not VerificaInternet then
@@ -7764,9 +7598,7 @@ begin
             mmListaEnviados.Lines.Add('Sms AvisoVenda - ' + FormatDateTime
                 ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
                 Time) + '-' + Celular + ' ' + Mensagem);
-            SalvarArquivoHistorico('Sms AvisoVenda - ' + FormatDateTime
-                ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
-                Time) + '-' + Celular + ' ' + Mensagem);
+
           end;
         end;
         lbEnviadosVendaSms.Caption := IntToStr
@@ -8029,9 +7861,7 @@ begin
                 mmListaEnviados.Lines.Add('AvisoVendaEmail - ' + FormatDateTime
                     ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
                     Time) + '-' + Email + ' ' + 'EmailAvisoVenda');
-                SalvarArquivoHistorico('AvisoVendaEmail - ' + FormatDateTime
-                    ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
-                    Time) + '-' + Email + ' ' + 'EmailAvisoVenda');
+
               end
               else
                 mmListaEnviados.Lines.Add(
@@ -8122,9 +7952,7 @@ begin
                   ('AvisoOrçamentoEmail - ' + FormatDateTime('dd/mm/yyyy',
                     Date) + '-' + FormatDateTime('hh:mm:ss',
                     Time) + '-' + Email + ' ' + 'EmailOrçamento');
-                SalvarArquivoHistorico('AvisoOrçamentoEmail - ' + FormatDateTime
-                    ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
-                    Time) + '-' + Email + ' ' + 'EmailOrçamento');
+
               end
               else
                 mmListaEnviados.Lines.Add(
@@ -8208,35 +8036,6 @@ begin
       end;
     end;
 
-    procedure InsereOrcamentoSms(Celular, Mensagem: String);
-    begin
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryOrcamentoSms.Active := False;
-        qryOrcamentoSms.Active := true;
-        qryOrcamentoSms.Active := False;
-        qryOrcamentoSms.Active := true;
-        qryOrcamentoSms.Insert;
-        qryOrcamentoSms['Cnpj'] := Sms.edCnpj.Text;
-        qryOrcamentoSms['Celular'] := Celular;
-        qryOrcamentoSms['Enviado'] := 0;
-        qryOrcamentoSms['Mensagem'] := Mensagem;
-        qryOrcamentoSms['Tipo'] := 'S';
-        try
-          qryOrcamentoSms.Post;
-        Except
-          Sms.tVerificaVendaOrcamento.Enabled := true;
-        end;
-        Try
-          qryOrcamentoSms.ApplyUpdates();
-        Except
-          Sms.tVerificaVendaOrcamento.Enabled := true;
-        end;
-        qryOrcamentoSms.Active := False;
-      end;
-    end;
-
     procedure TSms.btIniciaOrcamentoClick(Sender: TObject);
     var
       Contador: Integer;
@@ -8260,7 +8059,7 @@ begin
         end;
         if not EstaNaListaNegra(Celular) then
         begin
-          InsereOrcamentoSms(Celular, Mensagem);
+          InsereSms(Celular, Mensagem);
         end;
         if not VerificaInternet then
         begin
@@ -8622,7 +8421,7 @@ begin
       mmMensagemPromocaoEmail.Color := $00CCFFFF;
       if mmMensagemPromocaoEmail.ReadOnly = False then
       begin
-        mmMensagemPromocaoEmailGrande := TMemo.Create(nil);
+        mmMensagemPromocaoEmailGrande := TMemo.create(nil);
         mmMensagemPromocaoEmailGrande.Parent := Sms;
         mmMensagemPromocaoEmailGrande.Show;
         mmMensagemPromocaoEmailGrande.Top := 300;
@@ -8805,9 +8604,7 @@ begin
               mmListaEnviados.Lines.Add('Email Maketing - ' + FormatDateTime
                   ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
                   Time) + '-' + Email + ' ' + 'Email Marketing');
-              SalvarArquivoHistorico('Email Marketing - ' + FormatDateTime
-                  ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
-                  Time) + '-' + Email + ' ' + 'Email Marketing');
+
             end;
           end;
           Contador := Contador + 1;
@@ -9043,7 +8840,7 @@ begin
       mmMensagemAvisoOrcamentoEmail.Color := $00CCFFFF;
       if mmMensagemAvisoOrcamentoEmail.ReadOnly = False then
       begin
-        mmAvisoOrcamentoGrande := TMemo.Create(nil);
+        mmAvisoOrcamentoGrande := TMemo.create(nil);
         mmAvisoOrcamentoGrande.Parent := Sms;
         mmAvisoOrcamentoGrande.Show;
         mmAvisoOrcamentoGrande.Top := 300;
@@ -9087,7 +8884,7 @@ begin
       mmMensagemAvisoVendaEmail.Color := $00CCFFFF;
       if mmMensagemAvisoVendaEmail.ReadOnly = False then
       begin
-        mmAvisoVendaGrande := TMemo.Create(nil);
+        mmAvisoVendaGrande := TMemo.create(nil);
         mmAvisoVendaGrande.Parent := Sms;
         mmAvisoVendaGrande.Show;
         mmAvisoVendaGrande.Top := 300;
@@ -9367,7 +9164,7 @@ begin
 
     procedure TSms.CriaArquivoTxt(Arquivo, Texto: String);
     Var
-      Arq : TextFile;
+      Arq: TextFile;
     begin
       AssignFile(Arq, Arquivo);
       if FileExists(Arquivo) then
@@ -9426,7 +9223,7 @@ begin
       CodigoTexto: String;
     begin
       CodigoTexto := sgListaAgendamentosMarketing.Cells[13, LinhaSelecionada];
-      EdicaoEmail := TMemo.Create(nil);
+      EdicaoEmail := TMemo.create(nil);
       EdicaoEmail.Parent := Sms;
       EdicaoEmail.Show;
       EdicaoEmail.Top := 300;
@@ -9469,14 +9266,14 @@ begin
 
       if Assigned(WebBrowser.Document) then
       begin
-        sl := TStringList.Create;
+        sl := TStringList.create;
         try
-          ms := TMemoryStream.Create;
+          ms := TMemoryStream.create;
           try
             sl.Text := HTMLCode;
             sl.SaveToStream(ms);
             ms.Seek(0, 0); (WebBrowser.Document as IPersistStreamInit)
-            .Load(TStreamAdapter.Create(ms));
+            .Load(TStreamAdapter.create(ms));
           finally
             ms.Free;
           end;
@@ -9494,7 +9291,7 @@ begin
 
     procedure TSms.Visualizar1Click(Sender: TObject);
     begin
-      FWebBrowser := TWebBrowser.Create(Nil);
+      FWebBrowser := TWebBrowser.create(Nil);
       TWinControl(FWebBrowser).Parent := Sms;
       TWinControl(FWebBrowser).Name := 'wbVisualizarEmail';
       FWebBrowser.Left := 10;
@@ -9508,7 +9305,7 @@ begin
 
     procedure TSms.MenuItem1Click(Sender: TObject);
     begin
-      FWebBrowser := TWebBrowser.Create(Nil);
+      FWebBrowser := TWebBrowser.create(Nil);
       TWinControl(FWebBrowser).Parent := Sms;
       TWinControl(FWebBrowser).Name := 'wbVisualizarEmail';
       FWebBrowser.Left := 10;
@@ -9532,7 +9329,7 @@ begin
 
     procedure TSms.MenuItem3Click(Sender: TObject);
     begin
-      FWebBrowser := TWebBrowser.Create(Nil);
+      FWebBrowser := TWebBrowser.create(Nil);
       TWinControl(FWebBrowser).Parent := Sms;
       TWinControl(FWebBrowser).Name := 'wbVisualizarEmail';
       FWebBrowser.Left := 10;
@@ -9695,35 +9492,6 @@ begin
         end;
       end;
 
-      procedure InsereAtualizacaoPesquisaSatisfacaoSms(Celular,
-        Mensagem: String);
-      begin
-        with dmServidor do
-        begin
-          qryPesquisaSatisfacao.Active := False;
-          qryPesquisaSatisfacao.Active := true;
-          qryPesquisaSatisfacao.Insert;
-          qryPesquisaSatisfacao['Cnpj'] := Sms.edCnpj.Text;
-          qryPesquisaSatisfacao['Celular'] := Celular;
-          qryPesquisaSatisfacao['Enviado'] := 0;
-          qryPesquisaSatisfacao['Mensagem'] := Mensagem;
-          qryPesquisaSatisfacao['Tipo'] := 'S';
-          Try
-            qryPesquisaSatisfacao.Post;
-          Except
-            Sms.tVerificaPesquisaDeSatisfacao.Enabled := true;
-            Sms.tVerificaRepostaPesquisa.Enabled := true;
-          end;
-          Try
-            qryPesquisaSatisfacao.ApplyUpdates;
-          Except
-            Sms.tVerificaPesquisaDeSatisfacao.Enabled := true;
-            Sms.tVerificaRepostaPesquisa.Enabled := true;
-          end;
-          qryPesquisaSatisfacao.Active := False;
-        end;
-      end;
-
       procedure EnviaAtualizacaoPesquisaSatisfaco;
       Var
         IdentificacaoTextoEmailSatisfacao, TextoPosicaoSatisfacao: String;
@@ -9745,8 +9513,7 @@ begin
               ('dd/mm/yy', Date) + ' - ' + FormatDateTime('HH:MM:SS',
               Time), IdentificacaoTextoEmailSatisfacao);
           DeleteFile(IdentificacaoTextoEmailSatisfacao + '.txt');
-          InsereAtualizacaoPesquisaSatisfacaoSms(edCelularSatisfacao.Text,
-            TextoPosicaoSatisfacao);
+          InsereSms(edCelularSatisfacao.Text, TextoPosicaoSatisfacao);
         end;
       end;
 
@@ -9776,8 +9543,7 @@ begin
           end;
           if (Trim(lbUltimoCelular.Caption) <> UltimoCelular) then
           begin
-            InserePesquisaSatisfacaoSms(UltimoCelular,
-              Sms.mmMensagemSatisfacaoNotaRuim.Text);
+            InsereSms(UltimoCelular, Sms.mmMensagemSatisfacaoNotaRuim.Text);
             Sms.mmListaEnviados.Lines.Add
               (UltimoCelular + ' - ' + Sms.mmMensagemSatisfacaoNotaRuim.Text);
             Sms.lbSmsEnviadosPesquisaSatisfacao.Caption := IntToStr
@@ -9820,7 +9586,7 @@ begin
 
     procedure TSms.MenuItem4Click(Sender: TObject);
     begin
-      FWebBrowser := TWebBrowser.Create(Nil);
+      FWebBrowser := TWebBrowser.create(Nil);
       TWinControl(FWebBrowser).Parent := Sms;
       TWinControl(FWebBrowser).Name := 'wbVisualizarEmail';
       FWebBrowser.Left := 10;
@@ -9885,7 +9651,7 @@ begin
 
     Function BuscaEnviados(Data, Periodo: String): Boolean;
     Var
-      Sql, Tipo: String;
+      SQL, Tipo: String;
     begin
       Result := False;
       Case Sms.rgTipoListaEmailSms.ItemIndex of
@@ -9900,10 +9666,10 @@ begin
 
       end;
       if Periodo = 'Mes' then
-        Sql :=
+        SQL :=
           'SELECT Cnpj,celular,Enviado,Mensagem,Remetente,Tipo,CodigoTextoEmail ,data,hora,id FROM `Enviados` ' + #13 + ' where Cnpj=' + '''' + Sms.edCnpj.Text + '''' + #13 + ' and Month(data)=' + 'Month(' + '''' + FormatDateTime('yyyy-mm-dd', StrToDate(Data)) + '''' + ')' + #13 + ' and Year(data)=' + 'Year(' + '''' + FormatDateTime('yyyy-mm-dd', StrToDate(Data)) + '''' + ') and Enviado=1 and Tipo in (' + Tipo + ')';
       if Periodo = 'Periodo' then
-        Sql :=
+        SQL :=
           'SELECT Cnpj,celular,Enviado,Mensagem,Remetente,Tipo,CodigoTextoEmail ,data,hora,id FROM `Enviados` ' + #13 + ' where Cnpj=' + '''' + Sms.edCnpj.Text + '''' + #13 + ' and (data)=' + '(' + '''' + FormatDateTime('yyyy-mm-dd', StrToDate(Data)) + '''' + ')' + #13 + ' and Enviado=1 and Tipo in (' + Tipo + ')';
       // inputquery('','',Sql);
       with dmServidor do
@@ -9911,7 +9677,7 @@ begin
         qryListaSmsEmail.Active := False;
         qryListaSmsEmail.Active := true;
         qryListaSmsEmail.Close;
-        qryListaSmsEmail.Sql.Text := Sql;
+        qryListaSmsEmail.SQL.Text := SQL;
         qryListaSmsEmail.Open;
         if qryListaSmsEmail.RecordCount > 0 then
           Result := true;
@@ -9930,48 +9696,42 @@ begin
       function SqlResultadoPesquisaSatisfacao(DataInicial, DataFinal: String)
         : String;
       Var
-        Sql: String;
+        SQL: String;
       begin
-        Sql :=
-              'select    ' + #13 + '  Mensagem as Resposta,   ' + #13 +
-              '  Count(*) as TotalResposta,     ' + #13 +
-              '  (Count(*) /                   '       +#13+
+        SQL := 'select    ' + #13 + '  Mensagem as Resposta,   ' + #13 +
+          '  Count(*) as TotalResposta,     ' + #13 +
+          '  (Count(*) /                   ' + #13 +
 
+          '   (select                            ' + #13 +
+          '     distinct count(*)                    ' + #13 +
+          '   from                                        ' + #13 +
+          '     Recebidas TR ' + #13 +
+          '   where                                                   ' + #13 +
+          '     TR.Data Between '':DataIncial'' and  '':DataFinal''                  ' +
+          #13 + '     and Destinatario = '':Cnpj'' ' + #13 +
+          '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10''))  * 100)  as Percentual ' + #13 +
 
+          '  , (select                            ' + #13 +
+          '     distinct count(*)                    ' + #13 +
+          '   from                                        ' + #13 +
+          '     Recebidas TR ' + #13 +
+          '   where                                                   ' + #13 +
+          '     TR.Data Between '':DataIncial'' and  '':DataFinal''                  ' +
+          #13 + '     and Destinatario = '':Cnpj'' ' + #13 +
+          '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10''))  as TotalRespostas ' + #13 +
 
-              '   (select                            ' + #13 +
-              '     distinct count(*)                    ' + #13 +
-              '   from                                        ' + #13 +
-              '     Recebidas TR ' + #13 +
-              '   where                                                   ' + #13 +
-              '     TR.Data Between '':DataIncial'' and  '':DataFinal''                  ' +#13 +
-              '     and Destinatario = '':Cnpj'' ' +#13 +
-              '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10''))  * 100)  as Percentual ' +#13 +
+          ' FROM Recebidas R ' + #13 +
+          '   where                                                   ' + #13 +
+          '     R.Data Between '':DataIncial'' and  '':DataFinal''                  ' +
+          #13 + '     and Destinatario = '':Cnpj'' ' + #13 +
+          '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10'') ' + #13 + '   group by   ' + #13 + '     Mensagem ';
 
-              '  , (select                            ' + #13 +
-              '     distinct count(*)                    ' + #13 +
-              '   from                                        ' + #13 +
-              '     Recebidas TR ' + #13 +
-              '   where                                                   ' + #13 +
-              '     TR.Data Between '':DataIncial'' and  '':DataFinal''                  ' +#13 +
-              '     and Destinatario = '':Cnpj'' ' +#13 +
-              '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10''))  as TotalRespostas ' +#13 +
-
-
-              ' FROM Recebidas R '+#13+
-              '   where                                                   ' + #13 +
-              '     R.Data Between '':DataIncial'' and  '':DataFinal''                  ' +#13 +
-              '     and Destinatario = '':Cnpj'' ' +#13 +
-              '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10'') ' +#13 +
-              '   group by   ' +#13 +
-              '     Mensagem ' ;
-
-        Sql := StringReplace(StringReplace(StringReplace(Sql, ':DataIncial',
+        SQL := StringReplace(StringReplace(StringReplace(SQL, ':DataIncial',
               DataInicial, [rfReplaceAll, rfIgnoreCase]), ':DataFinal',
             DataFinal, [rfReplaceAll, rfIgnoreCase]), ':Cnpj', Sms.edCnpj.Text,
           [rfReplaceAll, rfIgnoreCase]);
-          //inputquery('','',Sql);
-        Result := Sql;
+        // inputquery('','',Sql);
+        Result := SQL;
       end;
 
       procedure BuscarResultadoPesquisaSatisfacao(DataInicial,
@@ -9980,7 +9740,7 @@ begin
         dmServidor.qryResultadoPesquisaSatisfacao.Active := False;
         dmServidor.qryResultadoPesquisaSatisfacao.Active := true;
         dmServidor.qryResultadoPesquisaSatisfacao.Close;
-        dmServidor.qryResultadoPesquisaSatisfacao.Sql.Text :=
+        dmServidor.qryResultadoPesquisaSatisfacao.SQL.Text :=
           SqlResultadoPesquisaSatisfacao(DataInicial, DataFinal);
         dmServidor.qryResultadoPesquisaSatisfacao.Open;
         if not(dmServidor.qryResultadoPesquisaSatisfacaoTotalResposta.Isnull)
@@ -9995,8 +9755,9 @@ begin
 
     begin
       BuscarResultadoPesquisaSatisfacao(FormatDateTime('dd/mm/yyyy',
-      Sms.dtpDataInicialPesquisaSatisfacao.Date),
-      FormatDateTime('dd/mm/yyyy', Sms.dtpDataFinalPesquisaSatisfacao.Date+1));
+          Sms.dtpDataInicialPesquisaSatisfacao.Date),
+        FormatDateTime('dd/mm/yyyy',
+          Sms.dtpDataFinalPesquisaSatisfacao.Date + 1));
 
     end;
 
@@ -10022,15 +9783,6 @@ begin
     procedure TSms.BitBtn1Click(Sender: TObject);
     begin
       tVerificaAgendamentos.Enabled := true;
-    end;
-
-    procedure TSms.BitBtn2Click(Sender: TObject);
-    begin
-      if tVerificaRepostaPesquisa.Enabled = true then
-        ShowMessage('pesquisa ativo')
-      else
-        ShowMessage('pesquisa inativo');
-
     end;
 
     procedure TSms.btExportarListaSmsEmailClick(Sender: TObject);
@@ -10265,7 +10017,7 @@ begin
       if mmMensagemInadimplenteEmail.ReadOnly = False then
       begin
         mmMsgCobranca.Text := 'Digite um Texo para o Email de Cobrança';
-        mmMensagemCobrancaEmailGrande := TMemo.Create(nil);
+        mmMensagemCobrancaEmailGrande := TMemo.create(nil);
         mmMensagemCobrancaEmailGrande.Parent := Sms;
         mmMensagemCobrancaEmailGrande.Show;
         mmMensagemCobrancaEmailGrande.Top := 300;
@@ -10293,7 +10045,7 @@ begin
 
     procedure TSms.MenuItem6Click(Sender: TObject);
     begin
-      FWebBrowser := TWebBrowser.Create(Nil);
+      FWebBrowser := TWebBrowser.create(Nil);
       TWinControl(FWebBrowser).Parent := Sms;
       TWinControl(FWebBrowser).Name := 'wbVisualizarEmail';
       FWebBrowser.Left := 10;
@@ -10449,7 +10201,7 @@ begin
       begin
         mmMsgAvisoVencimento.Text :=
           'Digite um Texo para o Email de Aviso de Vencimento';
-        mmMensagemEmailAvisoVencimentoGrande := TMemo.Create(nil);
+        mmMensagemEmailAvisoVencimentoGrande := TMemo.create(nil);
         mmMensagemEmailAvisoVencimentoGrande.Parent := Sms;
         mmMensagemEmailAvisoVencimentoGrande.Show;
         mmMensagemEmailAvisoVencimentoGrande.Top := 300;
@@ -10718,26 +10470,6 @@ begin
       end;
     end;
 
-    procedure InsereAvisoVencimento(Celular, Mensagem: String);
-    begin
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryAvisoVencimentoSms.Active := False;
-        qryAvisoVencimentoSms.Active := true;
-        qryAvisoVencimentoSms.Active := False;
-        qryAvisoVencimentoSms.Active := true;
-        qryAvisoVencimentoSms.Insert;
-        qryAvisoVencimentoSms['Cnpj'] := Sms.edCnpj.Text;
-        qryAvisoVencimentoSms['Celular'] := Celular;
-        qryAvisoVencimentoSms['Enviado'] := 0;
-        qryAvisoVencimentoSms['Mensagem'] := Mensagem;
-        qryAvisoVencimentoSms['Tipo'] := 'S';
-        qryAvisoVencimentoSms.Post;
-        qryAvisoVencimentoSms.Active := False;
-      end;
-    end;
-
     procedure TSms.btIniciaAvisoVencimentoSmsClick(Sender: TObject);
     var
       Contador: Integer;
@@ -10813,7 +10545,7 @@ begin
 
           if not EstaNaListaNegra(Celular) then
           begin
-            InsereAvisoVencimento(Celular, Mensagem);
+            InsereSms(Celular, Mensagem);
           end;
 
           if not VerificaInternet then
@@ -11060,7 +10792,7 @@ begin
 
     procedure TSms.MenuItem9Click(Sender: TObject);
     begin
-      FWebBrowser := TWebBrowser.Create(Nil);
+      FWebBrowser := TWebBrowser.create(Nil);
       TWinControl(FWebBrowser).Parent := Sms;
       TWinControl(FWebBrowser).Name := 'wbVisualizarEmail';
       FWebBrowser.Left := 10;
@@ -11380,7 +11112,7 @@ begin
 
     procedure TSms.edBuscaClientesListaNegraChange(Sender: TObject);
     var
-      Sql: String;
+      SQL: String;
     begin
 
     end;
@@ -11397,13 +11129,13 @@ begin
       with dmuPrincipal do
       begin
         qryRelClientesListaNegra.Close;
-        qryRelClientesListaNegra.Sql.Clear;
-        qryRelClientesListaNegra.Sql.Add('select ');
-        qryRelClientesListaNegra.Sql.Add('  OID, ');
-        qryRelClientesListaNegra.Sql.Add('  Nome as RAZSOC ');
-        qryRelClientesListaNegra.Sql.Add('from ');
-        qryRelClientesListaNegra.Sql.Add('  CLIENTECAD ');
-        qryRelClientesListaNegra.Sql.Add('where nome like ' + '''%' +
+        qryRelClientesListaNegra.SQL.Clear;
+        qryRelClientesListaNegra.SQL.Add('select ');
+        qryRelClientesListaNegra.SQL.Add('  OID, ');
+        qryRelClientesListaNegra.SQL.Add('  Nome as RAZSOC ');
+        qryRelClientesListaNegra.SQL.Add('from ');
+        qryRelClientesListaNegra.SQL.Add('  CLIENTECAD ');
+        qryRelClientesListaNegra.SQL.Add('where nome like ' + '''%' +
             edBuscaClientesListaNegra.Text + '%''');
         cdsClientesListaNegra.Close;
         cdsClientesListaNegra.Open;
@@ -11720,7 +11452,7 @@ begin
         end;
         if not EstaNaListaNegra(Celular) then
         begin
-          InsereConfirmacaoEntregaSms(Celular, Mensagem);
+          InsereSms(Celular, Mensagem);
         end;
         // CloseFile(arq);
         if not VerificaInternet then
@@ -11744,9 +11476,7 @@ begin
               ('Sms ConfirmacaoEntrega - ' + FormatDateTime('dd/mm/yyyy',
                 Date) + '-' + FormatDateTime('hh:mm:ss',
                 Time) + '-' + Celular + ' ' + Mensagem);
-            SalvarArquivoHistorico('Sms ConfirmacaoEntrega - ' + FormatDateTime
-                ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
-                Time) + '-' + Celular + ' ' + Mensagem);
+
           end;
         end;
         lbSmsEnviadosConfirmacaoEntrega.Caption := IntToStr

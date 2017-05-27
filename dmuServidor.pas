@@ -9,7 +9,7 @@ uses
 
 type
   TdmServidor = class(TDataModule)
-    dbPrincipal: TZConnection;
+    dbPrincipalu: TZConnection;
     qrySmsRecebidos: TZQuery;
     upSmsRecebidos: TZUpdateSQL;
     qryListaSmsEmail: TZQuery;
@@ -30,7 +30,6 @@ type
     upAgendamentoEmail: TZUpdateSQL;
     qryTextoAgendamentoEmail: TZQuery;
     upTextoAgendamentoEmail: TZUpdateSQL;
-    qryAtividade: TZQuery;
     qryAgendados: TZQuery;
     upAgendados: TZUpdateSQL;
     qryEntregaSms: TZQuery;
@@ -219,8 +218,8 @@ type
     qryResultadoPesquisaSatisfacao: TZQuery;
     qryResultadoPesquisaSatisfacaoResposta: TWideStringField;
     qryResultadoPesquisaSatisfacaoTotalResposta: TLargeintField;
-    qryResultadoPesquisaSatisfacaoTotalRespostas: TLargeintField;
     qryResultadoPesquisaSatisfacaoPercentual: TFloatField;
+    qryResultadoPesquisaSatisfacaoTotalRespostas: TLargeintField;
     procedure tPingServerTimer(Sender: TObject);
     procedure DesativaConexoes;
     procedure AtivarConexoes;
@@ -245,7 +244,7 @@ begin
     if (dmServidor.Components[I] is TZConnection) then
       TZConnection(dmServidor.Components[i]).PingServer;
   end;}
-  dmServidor.dbPrincipal.PingServer;
+  dmServidor.dbPrincipalu.PingServer;
 end;
 
 
@@ -254,7 +253,7 @@ var
   Contador : Integer;
 begin
   Contador := 0;
-  dmServidor.dbPrincipal.Disconnect;
+  dmServidor.dbPrincipalu.Disconnect;
   while self.ComponentCount-1 >= Contador do
   begin
     if (Self.Components[Contador] is TZQuery) then
@@ -264,7 +263,7 @@ begin
     Contador := Contador + 1;
   end;
   dmServidor.tPingServer.Enabled  := False;
-  dmServidor.dbPrincipal.Disconnect;
+  dmServidor.dbPrincipalu.Disconnect;
 end;
 
 
@@ -272,9 +271,9 @@ procedure TdmServidor.AtivarConexoes;
 var
   Contador : Integer;
 begin
-  dmServidor.dbPrincipal.Disconnect;
-  dmServidor.dbPrincipal.Connect;
-  dmServidor.dbPrincipal.Connected;
+  dmServidor.dbPrincipalu.Disconnect;
+  dmServidor.dbPrincipalu.Connect;
+  dmServidor.dbPrincipalu.Connected;
   {Contador := 0;
   while self.ComponentCount -1 >= Contador do
   begin

@@ -2,10 +2,11 @@ object dmServidor: TdmServidor
   OldCreateOrder = False
   Height = 872
   Width = 1299
-  object dbPrincipal: TZConnection
+  object dbPrincipalu: TZConnection
     ControlsCodePage = cGET_ACP
     Properties.Strings = (
       'AutoEncodeStrings=ON')
+    Connected = True
     HostName = 'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com'
     Port = 3306
     Database = 'mercurio'
@@ -17,7 +18,7 @@ object dmServidor: TdmServidor
     Top = 10
   end
   object qrySmsRecebidos: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upSmsRecebidos
     SQL.Strings = (
       'SELECT id,Numero,Mensagem,Data,Hora,Original FROM `Recebidas` '
@@ -126,7 +127,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryListaSmsEmail: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upListaSmsEmail
     SQL.Strings = (
       
@@ -272,7 +273,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryAgendamentoSms: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upAgendamentoSms
     SQL.Strings = (
       'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
@@ -366,7 +367,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryOrcamentoSms: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upOrcamentoSms
     SQL.Strings = (
       'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
@@ -460,7 +461,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryVendaSms: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upVendaSms
     SQL.Strings = (
       'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
@@ -554,7 +555,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryAvisoOrcamentoEmail: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upAvisoOrcamentoEmail
     SQL.Strings = (
       
@@ -677,7 +678,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryAvisoVendaEmail: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upAvisoVendaEmail
     SQL.Strings = (
       
@@ -800,7 +801,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryTextoEmail: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upTextoEmail
     SQL.Strings = (
       'SELECT CodigoTextoEmail,Texto,Cnpj FROM TextoEmail'
@@ -902,7 +903,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryAgendamentoEmail: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upAgendamentoEmail
     SQL.Strings = (
       
@@ -1025,7 +1026,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryTextoAgendamentoEmail: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upTextoAgendamentoEmail
     SQL.Strings = (
       'SELECT CodigoTextoEmail,Texto,Cnpj FROM TextoEmail'
@@ -1126,14 +1127,8 @@ object dmServidor: TdmServidor
         ParamType = ptUnknown
       end>
   end
-  object qryAtividade: TZQuery
-    Connection = dbPrincipal
-    Params = <>
-    Left = 194
-    Top = 552
-  end
   object qryAgendados: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upAgendados
     SQL.Strings = (
       'SELECT * FROM Agendamentos'
@@ -1290,7 +1285,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryEntregaSms: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upEntregaSms
     SQL.Strings = (
       'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
@@ -1384,7 +1379,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryCargaSms: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upCargaSms
     SQL.Strings = (
       'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
@@ -1478,7 +1473,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryCobrancaSms: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upCobrancaSms
     SQL.Strings = (
       'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
@@ -1572,7 +1567,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryAniversarioSms: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upAniversarioSms
     SQL.Strings = (
       'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
@@ -1666,7 +1661,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryCobrancaEmail: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upCobrancaEmail
     SQL.Strings = (
       
@@ -1789,7 +1784,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryAvisoVencimentoEmail: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upAvisoVencimentoEmail
     SQL.Strings = (
       
@@ -1912,7 +1907,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryAvisoVencimentoSms: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upAvisoVencimentoSms
     SQL.Strings = (
       'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
@@ -2006,7 +2001,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryVerificaResete: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     SQL.Strings = (
       'Select '
       '  Reseta'
@@ -2044,7 +2039,7 @@ object dmServidor: TdmServidor
     Top = 456
   end
   object qrySenha: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     SQL.Strings = (
       'select SenhaAlteracao from Clientes'
       'where Cnpj=:Cnpj'
@@ -2068,7 +2063,7 @@ object dmServidor: TdmServidor
     end
   end
   object ZQuery1: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     SQL.Strings = (
       'select SenhaAlteracao from Clientes'
       'where Cnpj=:Cnpj'
@@ -2092,7 +2087,7 @@ object dmServidor: TdmServidor
     end
   end
   object qryNaoRepetirSms: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     SQL.Strings = (
       'SELECT '
       '  count(*) '
@@ -2162,7 +2157,7 @@ object dmServidor: TdmServidor
     end
   end
   object qryConfirmacaoEntregaSms: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upConfirmacaoEntregaSms
     SQL.Strings = (
       'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
@@ -2256,7 +2251,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryPesquisaSatisfacao: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upPesquisaSatisfacao
     SQL.Strings = (
       'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
@@ -2350,7 +2345,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryRespostaSatisfacao: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     SQL.Strings = (
       'select '
       '  *'
@@ -2409,7 +2404,7 @@ object dmServidor: TdmServidor
     end
   end
   object qryTotalRespostaSatisfacao: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     SQL.Strings = (
       'select '
       '  count(*) as Total'
@@ -2438,7 +2433,7 @@ object dmServidor: TdmServidor
     end
   end
   object qryTextoEmailAtualizaSatisfacao: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upTextoEmailAtualizaSatisfacao
     SQL.Strings = (
       'SELECT CodigoTextoEmail,Texto,Cnpj FROM TextoEmail'
@@ -2540,7 +2535,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryPesquisaSatisfacaoEmail: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     UpdateObject = upPesquisaSatisfacaoEmail
     SQL.Strings = (
       
@@ -2663,7 +2658,7 @@ object dmServidor: TdmServidor
       end>
   end
   object qryResultadoPesquisaSatisfacao: TZQuery
-    Connection = dbPrincipal
+    Connection = dbPrincipalu
     SQL.Strings = (
       'select'
       '  Mensagem as Resposta,'
@@ -2741,12 +2736,12 @@ object dmServidor: TdmServidor
       FieldName = 'TotalResposta'
       ReadOnly = True
     end
-    object qryResultadoPesquisaSatisfacaoTotalRespostas: TLargeintField
-      FieldName = 'TotalRespostas'
-      ReadOnly = True
-    end
     object qryResultadoPesquisaSatisfacaoPercentual: TFloatField
       FieldName = 'Percentual'
+      ReadOnly = True
+    end
+    object qryResultadoPesquisaSatisfacaoTotalRespostas: TLargeintField
+      FieldName = 'TotalRespostas'
       ReadOnly = True
     end
   end
