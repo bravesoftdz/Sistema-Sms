@@ -1,0 +1,31 @@
+unit dmuServidor;
+
+interface
+
+uses
+  SysUtils, Classes, DBXpress, DB, SqlExpr, FMTBcd, Provider, DBClient,
+  ZAbstractConnection, ZConnection, ZSqlUpdate, ZAbstractRODataset,
+  ZAbstractDataset, ZDataset, ExtCtrls;
+
+type
+  TdmServidor = class(TDataModule)
+ 
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  dmServidor: TdmServidor;
+
+implementation
+
+{$R *.dfm}
+
+
+
+
+
+
+end.

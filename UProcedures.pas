@@ -20,7 +20,7 @@ uses
 
 
 
-procedure EnviaEmailControle(Cnpj,Titulo,EmailDestinatario,EmailRemetente,CodigoTexto,Identificacao,Inicio,Data : String);
+
 
 function MessageBoxTimer(const AMsg, ATitle: string; DlgType: TMsgDlgType;
 Buttons: TMsgDlgButtons; MSecs: Cardinal = 0;
@@ -36,7 +36,7 @@ Function VerificaSeJaEnviadoHoje(Celular,Mensagem,Cnpj : String) : Boolean;
 begin
   with dmServidor do
   begin
-    qryNaoRepetirSms.Close;
+   { qryNaoRepetirSms.Close;
     qryNaoRepetirSms.ParamByName('Celular').Value:= Celular ;
     qryNaoRepetirSms.ParamByName('Mensagem').Value:= Mensagem ;
     qryNaoRepetirSms.ParamByName('Cnpj').Value:= Cnpj ;
@@ -44,7 +44,7 @@ begin
     if qryNaoRepetirSms.RecordCount > 0 then
       Result := True
     else
-      Result := False;
+      Result := False; }
   end;
 end;
 
@@ -142,30 +142,5 @@ begin
 end;
 
 
-procedure EnviaEmailControle(Cnpj,Titulo,EmailDestinatario,EmailRemetente,CodigoTexto,Identificacao,Inicio,Data : String);
-begin
-  with dmServidor do
-  begin
-    Application.ProcessMessages;
-    qryAgendamentoEmail.Active := False;
-    qryAgendamentoEmail.Active := True;
-    qryAgendamentoEmail.Insert;
-    qryAgendamentoEmail['Cnpj'] := Cnpj;
-    qryAgendamentoEmail['Remetente']:=EmailRemetente;
-    qryAgendamentoEmail['celular']  :=EmailDestinatario;
-    qryAgendamentoEmail['Mensagem'] := 'Email Controle - ' + 'Agendamento '+ Inicio + ' - '+ Data +' - '+ Titulo;
-    qryAgendamentoEmail['Tipo'] := 'E';
-    qryAgendamentoEmail['Enviado'] := 0;
-    qryAgendamentoEmail['CodigoTextoEmail']:= CodigoTexto+Identificacao;
-    Try
-      qryAgendamentoEmail.Post;
-    Except
-    end;
-    Try
-      qryAgendamentoEmail.ApplyUpdates;
-    Except
-    end;
-  end;
-end;
 
 end.

@@ -508,7 +508,6 @@ type
     Label31: TLabel;
     lbUltimoCelular: TLabel;
     IdFTP: TIdFTP;
-    ApplicationEvents1: TApplicationEvents;
     lbtotalsatisfacao: TLabel;
     GroupBox8: TGroupBox;
     edCelularCopiaResposta: TLabeledEdit;
@@ -559,14 +558,7 @@ type
     DBGrid1: TDBGrid;
     dsResultadoPesquisaSatisfacao: TDataSource;
     btExportarPesquisaSatisfacao: TBitBtn;
-    dbPrincipalu: TZConnection;
-    qryInsereSms: TZQuery;
-    WideStringField1: TWideStringField;
-    WideStringField2: TWideStringField;
-    IntegerField1: TIntegerField;
-    WideStringField3: TWideStringField;
-    WideStringField4: TWideStringField;
-    IntegerField2: TIntegerField;
+    apEvents: TApplicationEvents;
     procedure mmMensagemPromocaoChange(Sender: TObject);
     procedure mmMensagemAvisoEntregaFiliaisChange(Sender: TObject);
     procedure btSalvarPromocaoClick(Sender: TObject);
@@ -950,17 +942,27 @@ type
     procedure EnviaEmailListaExterna;
     procedure btBuscarPesquisaSatisfacaoClick(Sender: TObject);
     procedure btExportarPesquisaSatisfacaoClick(Sender: TObject);
+    function SqlResultadoPesquisaSatisfacao(DataInicial, DataFinal: String)
+      : String;
+
     // procedure EnviaSmsListaExterna;
     Function CelularValido(Celular: String): Boolean;
+    procedure apEventsException(Sender: TObject; E: Exception);
   private
     { Private declarations }
     // DDD : TDDD;
   public
     { Public declarations }
     procedure InsereSms(Celular, Mensagem: String);
+    procedure InsereEmail(EmailEnvio, EmailDestinatario, Titulo,
+      CodigoTexto: String);
+    procedure CarregaTextoEmail(CodigoTexto: String);
+    function TextoNaMemo(Arquivo: String): String;
+
   end;
 
 var
+  PeriodoPesquisaEnvios: String;
   Sms: TSms;
   FWebBrowser: TWebBrowser;
   EdicaoEmail: TMemo;
@@ -987,9 +989,52 @@ var
 
 implementation
 
-uses UdmuPrincipal, qruCelularesInvalidos, Math, dmuServidor, UProcedures,
-  StdConvs;
+uses UdmuPrincipal, qruCelularesInvalidos, Math, dmuServidor,
+  UProcedures, StdConvs;
 {$R *.dfm}
+
+procedure TSms.InsereEmail(EmailEnvio, EmailDestinatario, Titulo,
+  CodigoTexto: String);
+Var
+  dbPrincipal: TZConnection;
+  qryInsereEmail: TZQuery;
+  Arq: TextFile;
+begin
+  CarregaTextoEmail(CodigoTexto);
+  with dmServidor do
+  begin
+    Application.ProcessMessages;
+    dbPrincipal := TZConnection.create(nil);
+    dbPrincipal.HostName :=
+      'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+    dbPrincipal.LibraryLocation := 'libmySQL.dll';
+    dbPrincipal.user := 'cadmus182';
+    dbPrincipal.Port := 3306;
+    dbPrincipal.Password := 'cadmus182';
+    dbPrincipal.Database := 'mercurio';
+    dbPrincipal.Protocol := 'mysql-5';
+    dbPrincipal.Connect;
+    qryInsereEmail := TZQuery.create(nil);
+    qryInsereEmail.connection := dbPrincipal;
+    qryInsereEmail.Close;
+    qryInsereEmail.SQL.Text :=
+      'Insert Into Enviados(Cnpj,Celular,Enviado,Mensagem,Tipo,CodigoTextoEmail,Remetente)' +
+      #13 + 'Values(' + '''' + edCnpj.Text + '''' + ',' +
+      '''' + EmailDestinatario + '''' + ',' + '''' + '0' +
+      '''' + ',' + '''' + Titulo + '''' + ',' + '''' + 'E' + '''' + ',' +
+      '''' + CodigoTexto + '''' + ',' + '''' + EmailEnvio + '''' + ')';
+    Try
+      qryInsereEmail.ExecSQL;
+      dbPrincipal.Disconnect;
+      dbPrincipal.Destroy;
+      qryInsereEmail.Destroy;
+    Except
+      dbPrincipal.Disconnect;
+      dbPrincipal.Destroy;
+      qryInsereEmail.Destroy;
+    End;
+  end;
+end;
 
 procedure TSms.InsereSms(Celular, Mensagem: String);
 Var
@@ -1010,12 +1055,16 @@ begin
   qryInsereSms.connection := dbPrincipal;
   qryInsereSms.SQL.Text :=
     'Insert Into Enviados(Cnpj,Celular,Enviado,Mensagem,Tipo)' + #13 +
-    'Values(' + ''''+edCnpj.Text+'''' + ',' + ''''+Celular+'''' + ',' + ''''+'0'+'''' + ',' + ''''+Mensagem+'''' + ',' + ''''+'S'+'''' + ' )';
+    'Values(' + '''' + edCnpj.Text + '''' + ',' + '''' + Celular +
+    '''' + ',' + '''' + '0' + '''' + ',' + '''' + Mensagem + '''' + ',' +
+    '''' + 'S' + '''' + ' )';
   Try
     qryInsereSms.ExecSQL;
+    dbPrincipal.Disconnect;
     dbPrincipal.Destroy;
     qryInsereSms.Destroy;
   Except
+    dbPrincipal.Disconnect;
     dbPrincipal.Destroy;
     qryInsereSms.Destroy;
   End;
@@ -1035,6 +1084,41 @@ begin
     Sms.cbFiltroEnvioListaExterna.Items.LoadFromFile
       ('ListaCategoriasListaExterna.txt');
   Sms.cbFiltroEnvioListaExterna.Items.Add('Todos');
+end;
+
+procedure TSms.CarregaTextoEmail(CodigoTexto: String);
+var
+  dbPrincipal: TZConnection;
+  qryTextoEmail: TZQuery;
+begin
+
+  Application.ProcessMessages;
+  dbPrincipal := TZConnection.create(nil);
+  dbPrincipal.HostName := 'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+  dbPrincipal.LibraryLocation := 'libmySQL.dll';
+  dbPrincipal.user := 'cadmus182';
+  dbPrincipal.Port := 3306;
+  dbPrincipal.Password := 'cadmus182';
+  dbPrincipal.Database := 'mercurio';
+  dbPrincipal.Protocol := 'mysql-5';
+  dbPrincipal.Connect;
+  qryTextoEmail := TZQuery.create(nil);
+  qryTextoEmail.connection := dbPrincipal;
+  qryTextoEmail.SQL.Text := 'Insert Into ' + #13 + '  TextoEmail' + #13 +
+    '    (CodigoTextoEmail,Texto,Cnpj FROM TextoEmail)' + #13 + 'Values(' +
+    '''' + CodigoTexto + '''' + '''' + TextoNaMemo(CodigoTexto + '.txt')
+    + '''' + '''' + Sms.edCnpj.Text + '''' + ')';
+  Try
+    qryTextoEmail.ExecSQL;
+    dbPrincipal.Disconnect;
+    dbPrincipal.Destroy;
+    qryTextoEmail.Destroy;
+  Except
+    dbPrincipal.Disconnect;
+    dbPrincipal.Destroy;
+    qryTextoEmail.Destroy;
+  End;
+  DeleteFile(CodigoTexto + '.txt');
 end;
 
 procedure TSms.ComboNaListaExterna;
@@ -1119,7 +1203,7 @@ begin
   Sms.sgListaExterna.Cells[3, 0] := 'Categoria';
 end;
 
-function TextoNaMemo(Arquivo: String): String;
+function TSms.TextoNaMemo(Arquivo: String): String;
 Var
   Memo: TMemo;
 begin
@@ -1425,34 +1509,67 @@ end;
 procedure SalvaSenha(Tipo, Senha: String);
 Var
   SQL: String;
+  dbPrincipal: TZConnection;
+  qrySenha: TZQuery;
 begin
-  with dmServidor do
-  begin
-    qrySenha.Active := False;
-    qrySenha.SQL.Text := 'update ' + #13 + 'Clientes set SenhaAlteracao=' +
-      '''' + Senha + '''' + #13 + 'where Cnpj=' + '''' + Sms.edCnpj.Text +
-      '''';
-    // Sql := qrySenha.SQL.Text;
-    // inputquery('','',Sql);
+  Application.ProcessMessages;
+  dbPrincipal := TZConnection.create(nil);
+  dbPrincipal.HostName := 'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+  dbPrincipal.LibraryLocation := 'libmySQL.dll';
+  dbPrincipal.user := 'cadmus182';
+  dbPrincipal.Port := 3306;
+  dbPrincipal.Password := 'cadmus182';
+  dbPrincipal.Database := 'mercurio';
+  dbPrincipal.Protocol := 'mysql-5';
+  dbPrincipal.Connect;
+  qrySenha := TZQuery.create(nil);
+  qrySenha.connection := dbPrincipal;
+  qrySenha.SQL.Text := 'update ' + #13 + 'Clientes set SenhaAlteracao=' +
+    '''' + Senha + '''' + #13 + 'where Cnpj=' + '''' + Sms.edCnpj.Text + '''';
+  // Sql := qrySenha.SQL.Text;
+  // inputquery('','',Sql);
+  Try
     qrySenha.ExecSQL;
-  end;
+    dbPrincipal.Disconnect;
+    dbPrincipal.Destroy;
+    qrySenha.Destroy;
+  Except
+    dbPrincipal.Disconnect;
+    dbPrincipal.Destroy;
+    qrySenha.Destroy;
+  End;
 end;
 
 function RecuperarSenha(Tipo: String): String;
+Var
+  SQL: String;
+  dbPrincipal: TZConnection;
+  qrySenha: TZQuery;
 begin
-  with dmServidor do
-  begin
-    qrySenha.Active := False;
-    qrySenha.SQL.Text := 'select  ' + #13 + '  SenhaAlteracao' + #13 +
-      'from ' + #13 + '  Clientes ' + #13 + 'where Cnpj=' + '''' +
-      Sms.edCnpj.Text + '''';
-    qrySenha.Active := true;
-    qrySenha.Open;
-    if qrySenha['SenhaAlteracao'] = null then
-      Result := ''
-    else
-      Result := Criptografia((qrySenha['SenhaAlteracao']), '236');
-  end;
+  Application.ProcessMessages;
+  dbPrincipal := TZConnection.create(nil);
+  dbPrincipal.HostName := 'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+  dbPrincipal.LibraryLocation := 'libmySQL.dll';
+  dbPrincipal.user := 'cadmus182';
+  dbPrincipal.Port := 3306;
+  dbPrincipal.Password := 'cadmus182';
+  dbPrincipal.Database := 'mercurio';
+  dbPrincipal.Protocol := 'mysql-5';
+  dbPrincipal.Connect;
+  qrySenha := TZQuery.create(nil);
+  qrySenha.connection := dbPrincipal;
+
+  qrySenha.SQL.Text := 'select  ' + #13 + '  SenhaAlteracao' + #13 + 'from ' +
+    #13 + '  Clientes ' + #13 + 'where Cnpj=' + '''' + Sms.edCnpj.Text + '''';
+  qrySenha.Active := true;
+  qrySenha.Open;
+  if qrySenha['SenhaAlteracao'] = null then
+    Result := ''
+  else
+    Result := Criptografia((qrySenha['SenhaAlteracao']), '236');
+  dbPrincipal.Disconnect;
+  dbPrincipal.Destroy;
+  qrySenha.Destroy;
 end;
 
 function VerificaTravamentoAlteracao: Boolean;
@@ -1631,9 +1748,11 @@ begin
   try
     qryAtividade.ExecSQL;
     Sms.tAvisaQueEstaAtivo.Enabled := true;
+    dbPrincipal.Disconnect;
     dbPrincipal.Destroy;
     qryAtividade.Destroy;
   Except
+    dbPrincipal.Disconnect;
     dbPrincipal.Destroy;
     qryAtividade.Destroy;
     Sms.tAvisaQueEstaAtivo.Enabled := true;
@@ -1664,23 +1783,6 @@ begin
   end
   else
     Result := False;
-end;
-
-Function VerificarSeOArquivoEmUso(Arquivo: String): Boolean;
-var
-  S: TStream;
-begin
-  try
-    try
-      S := TFileStream.create(Arquivo, fmOpenRead or fmShareExclusive);
-      Result := False;
-    except
-      on EStreamError do
-        Result := true; // EFOpenError
-    end;
-  finally
-    S.Free;
-  end;
 end;
 
 procedure SalvaMemo(Memo: TObject);
@@ -3513,53 +3615,6 @@ begin
           '[cliente______________________________]';
     end;
 
-    procedure CarregaTextoCobranca(CodigoTexto: String);
-    begin
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryTextoEmail.Active := False;
-        qryTextoEmail.Active := true;
-        qryTextoEmail.Close;
-        qryTextoEmail.Params.ParamByName('Cnpj').Value := Sms.edCnpj.Text;
-        qryTextoEmail.Params.ParamByName('CodigoTexto').Value := CodigoTexto;
-        qryTextoEmail.Open;
-        if qryTextoEmail.RecordCount > 0 then
-          qryTextoEmail.Delete;
-        qryTextoEmail.Insert;
-        qryTextoEmail['CodigoTextoEmail'] := CodigoTexto;
-        qryTextoEmail['Texto'] := TextoNaMemo(CodigoTexto + '.txt');
-        DeleteFile(CodigoTexto + '.txt');
-        qryTextoEmail.Post;
-        qryTextoEmail.ApplyUpdates();
-      end;
-    end;
-
-    procedure InsereEmailCobranca(EmailEnvio, EmailDestinatario, Titulo,
-      CodigoTexto: String);
-    Var
-      Arq: TextFile;
-    begin
-      CarregaTextoCobranca(CodigoTexto);
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryCobrancaEmail.Active := False;
-        qryCobrancaEmail.Active := true;
-        qryCobrancaEmail.Active := true;
-        qryCobrancaEmail.Insert;
-        qryCobrancaEmail['Cnpj'] := Sms.edCnpj.Text;
-        qryCobrancaEmail['Remetente'] := EmailEnvio;
-        qryCobrancaEmail['celular'] := EmailDestinatario;
-        qryCobrancaEmail['Mensagem'] := Titulo;
-        qryCobrancaEmail['Tipo'] := 'E';
-        qryCobrancaEmail['CodigoTextoEmail'] := CodigoTexto;
-        qryCobrancaEmail['Enviado'] := '0';
-        qryCobrancaEmail.Post;
-        qryCobrancaEmail.ApplyUpdates();
-      end;
-    end;
-
     procedure BuscarInadimplentes;
     var
       LTipo, SQL: String;
@@ -4558,6 +4613,8 @@ begin
       end;
 
     begin
+      if True then
+
       tVerificaPesquisaDeSatisfacao.Enabled := False;
       // VerificaConfirmacaoEntregaSatisfacao;
       Try
@@ -4744,7 +4801,6 @@ begin
         Sms.gbListaPesquisaSatisfação.Hide;
         Sms.gbResultadoPesquisaSatisfacao.Hide;
       end;
-      dmServidor.DesativaConexoes;
     end;
 
     Procedure BancoAtivo;
@@ -4832,7 +4888,6 @@ begin
         ConectaBancoDeDados(edUsuario.Text, edSenha.Text, edBancoDeDados.Text,
           edInstancia.Text);
       end;
-      dmServidor.AtivarConexoes;
     end;
 
     procedure PreencherPermissaoDeDiasDeEnvio;
@@ -4987,16 +5042,6 @@ begin
         Sms.gbMensagemSatisfacaoNotaRuim.Hide;
     end;
 
-    procedure ConectarBancoServidor;
-    begin
-      Try
-        // dmServidor.dbPrincipal.Disconnect;
-        // dmServidor.dbPrincipal.Connect;
-      Except
-        // ShowMessage('A Ferramenta Não Conseguiu se Conectar ao Servidor');
-      End;
-    end;
-
     procedure TSms.FormShow(Sender: TObject);
     Var
       btSelecionado: Integer;
@@ -5061,7 +5106,6 @@ begin
         Log('Recarregou a Lista Negra');
         Minimizado := False;
         clDatas.Date := Date;
-        ConectarBancoServidor;
         RecuperarTelas;
         Log('Recuperou as Telas');
         RecuperarValoresMemos;
@@ -6421,50 +6465,51 @@ begin
 
     end;
 
-procedure TSms.ckCopiaSmsRespostaClick(Sender: TObject);
+    procedure TSms.ckCopiaSmsRespostaClick(Sender: TObject);
 
-  procedure GravaCelularSmsRecebido(Celular: String);
-  Var
-    dbPrincipal: TZConnection;
-    qryAtividade: TZQuery;
-  begin
-    Application.ProcessMessages;
-    dbPrincipal := TZConnection.create(nil);
-    dbPrincipal.HostName := 'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
-    dbPrincipal.LibraryLocation := 'libmySQL.dll';
-    dbPrincipal.user := 'cadmus182';
-    dbPrincipal.Port := 3306;
-    dbPrincipal.Password := 'cadmus182';
-    dbPrincipal.Database := 'mercurio';
-    dbPrincipal.Protocol := 'mysql-5';
-    dbPrincipal.Connect;
-    qryAtividade := TZQuery.create(nil);
-    qryAtividade.connection := dbPrincipal;
-    qryAtividade.SQL.Text :=
-    'update Clientes set CelularResposta=' + '''' +
-    Sms.edCelularCopiaResposta.Text + '''' + #13 + 'where Cnpj=' +
-    '''' + Sms.edCnpj.Text + '''';
-  end;
+      procedure GravaCelularSmsRecebido(Celular: String);
+      Var
+        dbPrincipal: TZConnection;
+        qryAtividade: TZQuery;
+      begin
+        Application.ProcessMessages;
+        dbPrincipal := TZConnection.create(nil);
+        dbPrincipal.HostName :=
+          'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+        dbPrincipal.LibraryLocation := 'libmySQL.dll';
+        dbPrincipal.user := 'cadmus182';
+        dbPrincipal.Port := 3306;
+        dbPrincipal.Password := 'cadmus182';
+        dbPrincipal.Database := 'mercurio';
+        dbPrincipal.Protocol := 'mysql-5';
+        dbPrincipal.Connect;
+        qryAtividade := TZQuery.create(nil);
+        qryAtividade.connection := dbPrincipal;
+        qryAtividade.SQL.Text :=
+          'update Clientes set CelularResposta=' + '''' +
+          Sms.edCelularCopiaResposta.Text + '''' + #13 + 'where Cnpj=' +
+          '''' + Sms.edCnpj.Text + '''';
+      end;
 
-begin
-  if ckCopiaSmsResposta.Checked then
-  begin
-    if (edCelularCopiaResposta.Text <> '') and
-      (Length(edCelularCopiaResposta.Text) > 10) then
     begin
-      AbasteceListaAtivados(ckCopiaSmsResposta);
-      SalvaEdit(edCelularCopiaResposta);
-      edCelularCopiaResposta.Enabled := False;
-    end
-    else
-    begin
-      ckCopiaSmsResposta.Checked := False;
-      edCelularCopiaResposta.Enabled := true;
-      ShowMessage('Insira um Celular Valido');
+      if ckCopiaSmsResposta.Checked then
+      begin
+        if (edCelularCopiaResposta.Text <> '') and
+          (Length(edCelularCopiaResposta.Text) > 10) then
+        begin
+          AbasteceListaAtivados(ckCopiaSmsResposta);
+          SalvaEdit(edCelularCopiaResposta);
+          edCelularCopiaResposta.Enabled := False;
+        end
+        else
+        begin
+          ckCopiaSmsResposta.Checked := False;
+          edCelularCopiaResposta.Enabled := true;
+          ShowMessage('Insira um Celular Valido');
+        end;
+      end;
+      GravaCelularSmsRecebido(Sms.edCelularCopiaResposta.Text);
     end;
-  end;
-  GravaCelularSmsRecebido(Sms.edCelularCopiaResposta.Text);
-end;
 
     procedure TSms.ckControleSmsCobrancaClick(Sender: TObject);
     begin
@@ -6947,66 +6992,6 @@ end;
         end;
       end;
 
-      procedure CarregaTextoAgendamentoEmail(CodigoTexto,
-        Identificacao: String);
-      begin
-        with dmServidor do
-        begin
-          Application.ProcessMessages;
-          qryTextoAgendamentoEmail.Active := False;
-          qryTextoAgendamentoEmail.Active := true;
-          qryTextoAgendamentoEmail.Insert;
-          qryTextoAgendamentoEmail['CodigoTextoEmail'] :=
-            CodigoTexto + Identificacao;
-          qryTextoAgendamentoEmail['Cnpj'] := edCnpj.Text;
-          qryTextoAgendamentoEmail.FieldByName('Texto').Text := TextoNaMemo
-            (CodigoTexto + '.txt');
-          Try
-            qryTextoAgendamentoEmail.Post;
-          except
-            tVerificaAgendamentos.Enabled := true;
-          end;
-          Try
-            qryTextoAgendamentoEmail.ApplyUpdates;
-          except
-            tVerificaAgendamentos.Enabled := true;
-          end;
-        end;
-      end;
-
-      procedure EnviaEmailAgendamento(EmailEnvio, EmailDestinatario, Titulo,
-        CodigoTexto, Identificacao: String);
-      Var
-        Arq: TextFile;
-      begin
-        with dmServidor do
-        begin
-          Application.ProcessMessages;
-          CarregaTextoAgendamentoEmail(CodigoTexto, Identificacao);
-          qryAgendamentoEmail.Active := False;
-          qryAgendamentoEmail.Active := true;
-          qryAgendamentoEmail.Insert;
-          qryAgendamentoEmail['Cnpj'] := edCnpj.Text;
-          qryAgendamentoEmail['Remetente'] := EmailEnvio;
-          qryAgendamentoEmail['celular'] := EmailDestinatario;
-          qryAgendamentoEmail['Mensagem'] := Titulo;
-          qryAgendamentoEmail['Tipo'] := 'E';
-          qryAgendamentoEmail['Enviado'] := 0;
-          qryAgendamentoEmail['CodigoTextoEmail'] :=
-            CodigoTexto + Identificacao;
-          Try
-            qryAgendamentoEmail.Post;
-          Except
-            Sms.tVerificaAgendamentos.Enabled := true;
-          end;
-          Try
-            qryAgendamentoEmail.ApplyUpdates;
-          Except
-            Sms.tVerificaAgendamentos.Enabled := true;
-          end;
-        end;
-      end;
-
       procedure EnviaAgendamentoPromocaoEmail(NumeroSms: Integer;
         Filtro, ParametroFiltro, ParametroFiltro2, Msg, Limitar, Filtrar,
         EnviarNEnviados, ParametroFiltro3, Titulo, CodigoTexto, Inicio,
@@ -7043,10 +7028,8 @@ end;
             + RandomRange(1, 300);
           if ckReceberControleAmostraEmail.Checked then
           begin
-            CarregaTextoAgendamentoEmail(CodigoTexto, Identificacao);
-            EnviaEmailControle(edCnpj.Text, Titulo, edEmail.Text, edEmail.Text,
-              CodigoTexto, Identificacao, Inicio,
-              FormatDateTime('dd/mm/yyyy', Date));
+            Titulo := 'Email Controle - ' + 'Agendamento  - ' + ' - ' + Titulo;
+            InsereEmail(edEmail.Text, edEmail.Text, Titulo, (Identificacao));
           end;
         end;
         while Contador <= TotalSms - 1 do
@@ -7092,8 +7075,8 @@ end;
                 begin
                   if ValidarEMail(EmailaEnviar) then
                   begin
-                    EnviaEmailAgendamento(edEmail.Text, EmailaEnviar, Titulo,
-                      CodigoTexto, Identificacao);
+                    InsereEmail(edEmail.Text, EmailaEnviar, Titulo,
+                      Identificacao);
                     mmListaEnviados.Lines.Add
                       ('Email Marketing - ' + FormatDateTime('dd/mm/yyyy',
                         Date) + '-' + FormatDateTime('hh:mm:ss',
@@ -7110,8 +7093,8 @@ end;
                 end;
                 if (rgOpcaoDeEnvioEmail.ItemIndex = 0) then
                 begin
-                  EnviaEmailAgendamento(edEmail.Text, EmailaEnviar, Titulo,
-                    CodigoTexto, Identificacao);
+                  InsereEmail(edEmail.Text, EmailaEnviar, Titulo,
+                    Identificacao);
                   mmListaEnviados.Lines.Add
                     ('Email Marketing - ' + FormatDateTime('dd/mm/yyyy',
                       Date) + '-' + FormatDateTime('hh:mm:ss',
@@ -7284,9 +7267,7 @@ end;
               Identificacao := IntToStr(Length(EmailaEnviar))
                 + RemoveCaracteresEspeciais(FormatDateTime('dd/mm/yyyy',
                   Date)) + IntToStr(RandomRange(1, 300));
-              CarregaTextoAgendamentoEmail(CodigoTexto, Identificacao);
-              EnviaEmailAgendamento(edEmail.Text, EmailaEnviar, Titulo,
-                CodigoTexto, Identificacao);
+              InsereEmail(edEmail.Text, EmailaEnviar, Titulo, CodigoTexto);
             end;
             if EstaNaListaNegra(EmailaEnviar) then
               mmListaEnviados.Lines.Add(
@@ -7722,100 +7703,6 @@ end;
 
     procedure TSms.tVerificaVendaOrcamentoTimer(Sender: TObject);
 
-      procedure CarregaTextoVenda(CodigoTexto: String);
-      begin
-        with dmServidor do
-        begin
-          Application.ProcessMessages;
-          qryTextoEmail.Active := False;
-          qryTextoEmail.Active := true;
-          qryTextoEmail.Close;
-          qryTextoEmail.Params.ParamByName('Cnpj').Value := edCnpj.Text;
-          qryTextoEmail.Params.ParamByName('CodigoTexto').Value := CodigoTexto;
-          qryTextoEmail.Open;
-          if qryTextoEmail.RecordCount > 0 then
-            qryTextoEmail.Delete;
-          qryTextoEmail.Insert;
-          qryTextoEmail['CodigoTextoEmail'] := CodigoTexto;
-          qryTextoEmail['Cnpj'] := edCnpj.Text;
-          qryTextoEmail['Texto'] := TextoNaMemo(CodigoTexto + '.txt');
-          qryTextoEmail.Post;
-          qryTextoEmail.ApplyUpdates;
-        end;
-      end;
-
-      procedure CarregaTextoOrcamento(CodigoTexto: String);
-      begin
-        with dmServidor do
-        begin
-          Application.ProcessMessages;
-          qryTextoEmail.Active := False;
-          qryTextoEmail.Active := true;
-          qryTextoEmail.Close;
-          qryTextoEmail.Params.ParamByName('Cnpj').Value := edCnpj.Text;
-          qryTextoEmail.Params.ParamByName('CodigoTexto').Value := CodigoTexto;
-          qryTextoEmail.Open;
-          if qryTextoEmail.RecordCount > 0 then
-            qryTextoEmail.Delete;
-          qryTextoEmail.Insert;
-          qryTextoEmail['CodigoTextoEmail'] := CodigoTexto;
-          qryTextoEmail['Cnpj'] := edCnpj.Text;
-          qryTextoEmail['Texto'] := TextoNaMemo(CodigoTexto + '.txt');
-          qryTextoEmail.Post;
-          qryTextoEmail.ApplyUpdates();
-        end;
-      end;
-
-      procedure EnviaAvisoOrcamentoEmail(EmailEnvio, EmailDestinatario, Titulo,
-        CodigoTexto: String; Memo: TObject);
-      Var
-        Arq: TextFile;
-      begin
-        CarregaTextoOrcamento(CodigoTexto);
-        with dmServidor do
-        begin
-          Application.ProcessMessages;
-          qryAvisoOrcamentoEmail.Active := False;
-          qryAvisoOrcamentoEmail.Active := true;
-          qryAvisoOrcamentoEmail.Active := true;
-          qryAvisoOrcamentoEmail.Insert;
-          qryAvisoOrcamentoEmail['Cnpj'] := edCnpj.Text;
-          qryAvisoOrcamentoEmail['Remetente'] := EmailEnvio;
-          qryAvisoOrcamentoEmail['celular'] := EmailDestinatario;
-          qryAvisoOrcamentoEmail['Mensagem'] := Titulo;
-          qryAvisoOrcamentoEmail['Tipo'] := 'E';
-          qryAvisoOrcamentoEmail['CodigoTextoEmail'] := CodigoTexto;
-          qryAvisoOrcamentoEmail['Enviado'] := '0';
-          qryAvisoOrcamentoEmail.Post;
-          qryAvisoOrcamentoEmail.ApplyUpdates();
-        end;
-      end;
-
-      procedure EnviaAvisoVendaEmail(EmailEnvio, EmailDestinatario, Titulo,
-        CodigoTexto: String; Memo: TObject);
-      Var
-        Arq: TextFile;
-      begin
-        CarregaTextoVenda(CodigoTexto);
-        with dmServidor do
-        begin
-          Application.ProcessMessages;
-          qryAvisoVendaEmail.Active := False;
-          qryAvisoVendaEmail.Active := true;
-          qryAvisoVendaEmail.Active := true;
-          qryAvisoVendaEmail.Insert;
-          qryAvisoVendaEmail['Cnpj'] := edCnpj.Text;
-          qryAvisoVendaEmail['Remetente'] := EmailEnvio;
-          qryAvisoVendaEmail['celular'] := EmailDestinatario;
-          qryAvisoVendaEmail['Mensagem'] := Titulo;
-          qryAvisoVendaEmail['Tipo'] := 'E';
-          qryAvisoVendaEmail['CodigoTextoEmail'] := CodigoTexto;
-          qryAvisoVendaEmail['Enviado'] := '0';
-          qryAvisoVendaEmail.Post;
-          qryAvisoVendaEmail.ApplyUpdates();
-        end;
-      end;
-
       procedure IniciaEnvioVendaEmail;
       var
         Mensagem, Email: String;
@@ -7855,9 +7742,9 @@ end;
             begin
               if (ValidarEMail(Email)) then
               begin
-                EnviaAvisoVendaEmail(edEmail.Text, Email,
-                  edTituloEmailAvisoVenda.Text, 'TextoEmailVenda',
-                  mmMensagemAvisoVendaEmail);
+
+                InsereEmail(edEmail.Text, Email, edTituloEmailAvisoVenda.Text,
+                  'TextoEmailVenda');
                 mmListaEnviados.Lines.Add('AvisoVendaEmail - ' + FormatDateTime
                     ('dd/mm/yyyy', Date) + '-' + FormatDateTime('hh:mm:ss',
                     Time) + '-' + Email + ' ' + 'EmailAvisoVenda');
@@ -7945,9 +7832,8 @@ end;
             begin
               if (ValidarEMail(Email)) then
               begin
-                EnviaAvisoOrcamentoEmail(edEmail.Text, Email,
-                  edTituloEmailAvisoOrcamento.Text, 'TextoEmailOrcamento',
-                  mmMensagemAvisoOrcamentoEmail);
+                InsereEmail(edEmail.Text, Email,
+                  edTituloEmailAvisoOrcamento.Text, 'TextoEmailOrcamento');
                 mmListaEnviados.Lines.Add
                   ('AvisoOrçamentoEmail - ' + FormatDateTime('dd/mm/yyyy',
                     Date) + '-' + FormatDateTime('hh:mm:ss',
@@ -8953,7 +8839,19 @@ end;
       end;
     end;
 
-    procedure TSms.ituloEmail1Click(Sender: TObject);
+procedure TSms.apEventsException(Sender: TObject; E: Exception);
+begin
+  Application.ProcessMessages;
+  CriaArquivoTxt('Erro.txt', E.Message);
+  // EnviaAcrescentaArquivo('Erro.txt',True,False);
+  if btConectaBancoDeDados.Caption = 'Desconectar' then
+  begin
+    tVerificaAgendamentos.Enabled := true;
+    tVerificaVendaOrcamento.Enabled := true;
+  end;
+end;
+
+procedure TSms.ituloEmail1Click(Sender: TObject);
     begin
       ShowMessage(sgListaAgendamentosMarketing.Cells[0, LinhaSelecionada]);
     end;
@@ -9122,22 +9020,39 @@ end;
     end;
 
     procedure TSms.tVerificaRespostasSmsTimer(Sender: TObject);
-    begin
-      // ShowMessage('Atualizando Recebidas');
+    var
+      dbPrincipal: TZConnection;
+      qrySmsRecebidos: TZQuery;
+    begin // ShowMessage('Atualizando Recebidas');
       tVerificaRespostasSms.Enabled := False;
       Application.ProcessMessages;
       pnSinalizaVerificaRespondidos.Color := clGreen;
       with dmServidor do
       begin
-        qrySmsRecebidos.Active := False;
-        qrySmsRecebidos.Close;
-        qrySmsRecebidos.ParamByName('Cnpj').Value := Trim(edCnpj.Text);
+        Application.ProcessMessages;
+        dbPrincipal := TZConnection.create(nil);
+        dbPrincipal.HostName :=
+          'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+        dbPrincipal.LibraryLocation := 'libmySQL.dll';
+        dbPrincipal.user := 'cadmus182';
+        dbPrincipal.Port := 3306;
+        dbPrincipal.Password := 'cadmus182';
+        dbPrincipal.Database := 'mercurio';
+        dbPrincipal.Protocol := 'mysql-5';
+        dbPrincipal.Connect;
+        qrySmsRecebidos := TZQuery.create(nil);
+        qrySmsRecebidos.connection := dbPrincipal;
+        qrySmsRecebidos.SQL.Text := 'SELECT  ' + #13 + '  id,     ' + #13 +
+          '  Numero,  ' + #13 + '  Mensagem, ' + #13 + '  Data,   ' + #13 +
+          '  Hora,   ' + #13 + 'Original ' + #13 + 'FROM  ' + #13 +
+          '  Recebidas' + #13 + 'where Destinatario=' + Sms.edCnpj.Text;
         Try
-          qrySmsRecebidos.Active := true;
+          qrySmsRecebidos.Open;
+          Sms.dsSmsRespondidos.DataSet := qrySmsRecebidos;
+
         Except
           tVerificaRespostasSms.Enabled := true;
         end;
-        qrySmsRecebidos.Open;
       end;
       pnSinalizaVerificaRespondidos.Color := clRed;
       tVerificaRespostasSms.Enabled := true;
@@ -9439,59 +9354,6 @@ end;
         end;
       end;
 
-      procedure InsereEmailAtualizacaoPesquisaSatisfacao(EmailEnvio,
-        EmailDestinatario, Titulo, CodigoTexto: String);
-
-        procedure CarregaTextoAtualizacaoPesquisaSatisfacao
-          (CodigoTexto: String);
-        begin
-          with dmServidor do
-          begin
-            Application.ProcessMessages;
-            qryTextoEmailAtualizaSatisfacao.Active := False;
-            qryTextoEmailAtualizaSatisfacao.Active := true;
-            qryTextoEmailAtualizaSatisfacao.Close;
-            qryTextoEmailAtualizaSatisfacao.Params.ParamByName('Cnpj')
-              .Value := Sms.edCnpj.Text;
-            qryTextoEmailAtualizaSatisfacao.Params.ParamByName('CodigoTexto')
-              .Value := CodigoTexto;
-            qryTextoEmailAtualizaSatisfacao.Open;
-            if qryTextoEmailAtualizaSatisfacao.RecordCount > 0 then
-              qryTextoEmailAtualizaSatisfacao.Delete;
-            qryTextoEmailAtualizaSatisfacao.Insert;
-            qryTextoEmailAtualizaSatisfacao['CodigoTextoEmail'] := CodigoTexto;
-            qryTextoEmailAtualizaSatisfacao['Cnpj'] := Sms.edCnpj.Text;
-            qryTextoEmailAtualizaSatisfacao['Texto'] := TextoNaMemo
-              (CodigoTexto + '.txt');
-            DeleteFile(CodigoTexto + '.txt');
-            qryTextoEmailAtualizaSatisfacao.Post;
-            qryTextoEmailAtualizaSatisfacao.ApplyUpdates();
-          end;
-        end;
-
-      Var
-        Arq: TextFile;
-      begin
-        CarregaTextoAtualizacaoPesquisaSatisfacao(CodigoTexto);
-        with dmServidor do
-        begin
-          Application.ProcessMessages;
-          qryPesquisaSatisfacaoEmail.Active := False;
-          qryPesquisaSatisfacaoEmail.Active := true;
-          qryPesquisaSatisfacaoEmail.Active := true;
-          qryPesquisaSatisfacaoEmail.Insert;
-          qryPesquisaSatisfacaoEmail['Cnpj'] := Sms.edCnpj.Text;
-          qryPesquisaSatisfacaoEmail['Remetente'] := EmailEnvio;
-          qryPesquisaSatisfacaoEmail['celular'] := EmailDestinatario;
-          qryPesquisaSatisfacaoEmail['Mensagem'] := Titulo;
-          qryPesquisaSatisfacaoEmail['Tipo'] := 'E';
-          qryPesquisaSatisfacaoEmail['CodigoTextoEmail'] := CodigoTexto;
-          qryPesquisaSatisfacaoEmail['Enviado'] := '0';
-          qryPesquisaSatisfacaoEmail.Post;
-          qryPesquisaSatisfacaoEmail.ApplyUpdates();
-        end;
-      end;
-
       procedure EnviaAtualizacaoPesquisaSatisfaco;
       Var
         IdentificacaoTextoEmailSatisfacao, TextoPosicaoSatisfacao: String;
@@ -9507,11 +9369,10 @@ end;
             + FormatDateTime('HHMMSS', Time) + IntToStr(RandomRange(1, 30));
           CriaArquivoTxt(IdentificacaoTextoEmailSatisfacao + '.txt',
             TextoPosicaoSatisfacao);
-          InsereEmailAtualizacaoPesquisaSatisfacao(edEmail.Text,
-            edEmailSatisfacao.Text,
+          InsereEmail(edEmail.Text, edEmailSatisfacao.Text,
             'Pesquisa de Satisfação Simples Sms - ' + FormatDateTime
-              ('dd/mm/yy', Date) + ' - ' + FormatDateTime('HH:MM:SS',
-              Time), IdentificacaoTextoEmailSatisfacao);
+              ('dd/mm/yy', Date) + ' - ' + FormatDateTime('HH:MM:SS', Time),
+            IdentificacaoTextoEmailSatisfacao);
           DeleteFile(IdentificacaoTextoEmailSatisfacao + '.txt');
           InsereSms(edCelularSatisfacao.Text, TextoPosicaoSatisfacao);
         end;
@@ -9651,8 +9512,11 @@ end;
 
     Function BuscaEnviados(Data, Periodo: String): Boolean;
     Var
+      dbPrincipal: TZConnection;
+      qryListaSmsEmail: TZQuery;
       SQL, Tipo: String;
     begin
+      PeriodoPesquisaEnvios := Periodo;
       Result := False;
       Case Sms.rgTipoListaEmailSms.ItemIndex of
         0:
@@ -9672,18 +9536,29 @@ end;
         SQL :=
           'SELECT Cnpj,celular,Enviado,Mensagem,Remetente,Tipo,CodigoTextoEmail ,data,hora,id FROM `Enviados` ' + #13 + ' where Cnpj=' + '''' + Sms.edCnpj.Text + '''' + #13 + ' and (data)=' + '(' + '''' + FormatDateTime('yyyy-mm-dd', StrToDate(Data)) + '''' + ')' + #13 + ' and Enviado=1 and Tipo in (' + Tipo + ')';
       // inputquery('','',Sql);
-      with dmServidor do
-      begin
-        qryListaSmsEmail.Active := False;
-        qryListaSmsEmail.Active := true;
-        qryListaSmsEmail.Close;
-        qryListaSmsEmail.SQL.Text := SQL;
-        qryListaSmsEmail.Open;
-        if qryListaSmsEmail.RecordCount > 0 then
-          Result := true;
-        Sms.lbTotalMsg.Caption := IntToStr(qryListaSmsEmail.RecordCount);
-      end;
+      Application.ProcessMessages;
+      if dbPrincipal = nil then
+        dbPrincipal.Destroy;
+      dbPrincipal := TZConnection.create(nil);
+      dbPrincipal.HostName :=
+        'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+      dbPrincipal.LibraryLocation := 'libmySQL.dll';
+      dbPrincipal.user := 'cadmus182';
+      dbPrincipal.Port := 3306;
+      dbPrincipal.Password := 'cadmus182';
+      dbPrincipal.Database := 'mercurio';
+      dbPrincipal.Protocol := 'mysql-5';
+      dbPrincipal.Connect;
+      if qryListaSmsEmail = nil then
+        qryListaSmsEmail.Destroy;
+      qryListaSmsEmail := TZQuery.create(nil);
+      qryListaSmsEmail.connection := dbPrincipal;
+      qryListaSmsEmail.SQL.Text := SQL;
 
+      if qryListaSmsEmail.RecordCount > 0 then
+        Result := true;
+      Sms.lbTotalMsg.Caption := IntToStr(qryListaSmsEmail.RecordCount);
+      Sms.dsListaEmails.DataSet := qryListaSmsEmail;
     end;
 
     procedure TSms.clDatasClick(Sender: TObject);
@@ -9691,64 +9566,81 @@ end;
       BuscaEnviados(DateToStr(clDatas.Date), 'Periodo');
     end;
 
+    function TSms.SqlResultadoPesquisaSatisfacao(DataInicial, DataFinal: String)
+      : String;
+    Var
+      SQL: String;
+    begin
+      SQL := 'select    ' + #13 + '  Mensagem as Resposta,   ' + #13 +
+        '  Count(*) as TotalResposta,     ' + #13 +
+        '  (Count(*) /                   ' + #13 +
+
+        '   (select                            ' + #13 +
+        '     distinct count(*)                    ' + #13 +
+        '   from                                        ' + #13 +
+        '     Recebidas TR ' + #13 +
+        '   where                                                   ' + #13 +
+        '     TR.Data Between '':DataIncial'' and  '':DataFinal''                  ' +
+        #13 + '     and Destinatario = '':Cnpj'' ' + #13 +
+        '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10''))  * 100)  as Percentual ' + #13 +
+
+        '  , (select                            ' + #13 +
+        '     distinct count(*)                    ' + #13 +
+        '   from                                        ' + #13 +
+        '     Recebidas TR ' + #13 +
+        '   where                                                   ' + #13 +
+        '     TR.Data Between '':DataIncial'' and  '':DataFinal''                  ' +
+        #13 + '     and Destinatario = '':Cnpj'' ' + #13 +
+        '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10''))  as TotalRespostas ' + #13 +
+
+        ' FROM Recebidas R ' + #13 +
+        '   where                                                   ' + #13 +
+        '     R.Data Between '':DataIncial'' and  '':DataFinal''                  ' +
+        #13 + '     and Destinatario = '':Cnpj'' ' + #13 +
+        '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10'') ' + #13 + '   group by   ' + #13 + '     Mensagem ';
+
+      SQL := StringReplace(StringReplace(StringReplace(SQL, ':DataIncial',
+            DataInicial, [rfReplaceAll, rfIgnoreCase]), ':DataFinal',
+          DataFinal, [rfReplaceAll, rfIgnoreCase]), ':Cnpj', Sms.edCnpj.Text,
+        [rfReplaceAll, rfIgnoreCase]);
+      // inputquery('','',Sql);
+      Result := SQL;
+    end;
+
     procedure TSms.btBuscarPesquisaSatisfacaoClick(Sender: TObject);
-
-      function SqlResultadoPesquisaSatisfacao(DataInicial, DataFinal: String)
-        : String;
-      Var
-        SQL: String;
-      begin
-        SQL := 'select    ' + #13 + '  Mensagem as Resposta,   ' + #13 +
-          '  Count(*) as TotalResposta,     ' + #13 +
-          '  (Count(*) /                   ' + #13 +
-
-          '   (select                            ' + #13 +
-          '     distinct count(*)                    ' + #13 +
-          '   from                                        ' + #13 +
-          '     Recebidas TR ' + #13 +
-          '   where                                                   ' + #13 +
-          '     TR.Data Between '':DataIncial'' and  '':DataFinal''                  ' +
-          #13 + '     and Destinatario = '':Cnpj'' ' + #13 +
-          '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10''))  * 100)  as Percentual ' + #13 +
-
-          '  , (select                            ' + #13 +
-          '     distinct count(*)                    ' + #13 +
-          '   from                                        ' + #13 +
-          '     Recebidas TR ' + #13 +
-          '   where                                                   ' + #13 +
-          '     TR.Data Between '':DataIncial'' and  '':DataFinal''                  ' +
-          #13 + '     and Destinatario = '':Cnpj'' ' + #13 +
-          '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10''))  as TotalRespostas ' + #13 +
-
-          ' FROM Recebidas R ' + #13 +
-          '   where                                                   ' + #13 +
-          '     R.Data Between '':DataIncial'' and  '':DataFinal''                  ' +
-          #13 + '     and Destinatario = '':Cnpj'' ' + #13 +
-          '     and Trim(Mensagem) in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10'') ' + #13 + '   group by   ' + #13 + '     Mensagem ';
-
-        SQL := StringReplace(StringReplace(StringReplace(SQL, ':DataIncial',
-              DataInicial, [rfReplaceAll, rfIgnoreCase]), ':DataFinal',
-            DataFinal, [rfReplaceAll, rfIgnoreCase]), ':Cnpj', Sms.edCnpj.Text,
-          [rfReplaceAll, rfIgnoreCase]);
-        // inputquery('','',Sql);
-        Result := SQL;
-      end;
 
       procedure BuscarResultadoPesquisaSatisfacao(DataInicial,
         DataFinal: String);
+      Var
+        dbPrincipal: TZConnection;
+        qryResultadoPesquisaSatisfacao: TZQuery;
       begin
-        dmServidor.qryResultadoPesquisaSatisfacao.Active := False;
-        dmServidor.qryResultadoPesquisaSatisfacao.Active := true;
-        dmServidor.qryResultadoPesquisaSatisfacao.Close;
-        dmServidor.qryResultadoPesquisaSatisfacao.SQL.Text :=
+        Application.ProcessMessages;
+        if dbPrincipal = nil then
+          dbPrincipal.Destroy;
+        dbPrincipal := TZConnection.create(nil);
+        dbPrincipal.HostName :=
+          'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+        dbPrincipal.LibraryLocation := 'libmySQL.dll';
+        dbPrincipal.user := 'cadmus182';
+        dbPrincipal.Port := 3306;
+        dbPrincipal.Password := 'cadmus182';
+        dbPrincipal.Database := 'mercurio';
+        dbPrincipal.Protocol := 'mysql-5';
+        dbPrincipal.Connect;
+        if qryResultadoPesquisaSatisfacao = nil then
+          qryResultadoPesquisaSatisfacao.Destroy;
+        qryResultadoPesquisaSatisfacao := TZQuery.create(nil);
+        qryResultadoPesquisaSatisfacao.connection := dbPrincipal;
+        qryResultadoPesquisaSatisfacao.SQL.Text :=
           SqlResultadoPesquisaSatisfacao(DataInicial, DataFinal);
-        dmServidor.qryResultadoPesquisaSatisfacao.Open;
-        if not(dmServidor.qryResultadoPesquisaSatisfacaoTotalResposta.Isnull)
-          then
-
+        qryResultadoPesquisaSatisfacao.Open;
+        Sms.dsResultadoPesquisaSatisfacao.DataSet :=
+          qryResultadoPesquisaSatisfacao;
+        if not(qryResultadoPesquisaSatisfacao['TotalResposta'].Isnull) then
           gbResultadoPesquisaSatisfacao.Caption :=
             'Total de Respostas : ' + IntToStr
-            (dmServidor.qryResultadoPesquisaSatisfacao['TotalRespostas'])
+            (qryResultadoPesquisaSatisfacao['TotalRespostas'])
         else
           gbResultadoPesquisaSatisfacao.Caption := 'Total de Respostas : 0';
       end;
@@ -9786,66 +9678,163 @@ end;
     end;
 
     procedure TSms.btExportarListaSmsEmailClick(Sender: TObject);
+    Var
+      Texto: TextFile;
+      Local: String;
+      dbPrincipal: TZConnection;
+      qryListaSmsEmail: TZQuery;
+      Tipo: String;
+      SQL: String;
+      Data: String;
     begin
-      dmServidor.qryListaSmsEmail.Open;
-      GerarExcel(dmServidor.qryListaSmsEmail);
+      Data := DateToStr(clDatas.Date);
+      ShowMessage('A Exportação Terá Inicio Aguarde a Mensagem de Conclusão');
+      Case Sms.rgTipoListaEmailSms.ItemIndex of
+        0:
+          Tipo := '''E''';
+
+        1:
+          Tipo := '''S''';
+
+        2:
+          Tipo := ' ''S'',''E''';
+
+      end;
+      if PeriodoPesquisaEnvios = 'Mes' then
+        SQL :=
+          'SELECT Cnpj,celular,Enviado,Mensagem,Remetente,Tipo,CodigoTextoEmail ,data,hora,id FROM `Enviados` ' + #13 + ' where Cnpj=' + '''' + Sms.edCnpj.Text + '''' + #13 + ' and Month(data)=' + 'Month(' + '''' + FormatDateTime('yyyy-mm-dd', StrToDate(Data)) + '''' + ')' + #13 + ' and Year(data)=' + 'Year(' + '''' + FormatDateTime('yyyy-mm-dd', StrToDate(Data)) + '''' + ') and Enviado=1 and Tipo in (' + Tipo + ')';
+      if PeriodoPesquisaEnvios = 'Periodo' then
+        SQL :=
+          'SELECT Cnpj,celular,Enviado,Mensagem,Remetente,Tipo,CodigoTextoEmail ,data,hora,id FROM `Enviados` ' + #13 + ' where Cnpj=' + '''' + Sms.edCnpj.Text + '''' + #13 + ' and (data)=' + '(' + '''' + FormatDateTime('yyyy-mm-dd', StrToDate(Data)) + '''' + ')' + #13 + ' and Enviado=1 and Tipo in (' + Tipo + ')';
+      // inputquery('','',Sql);
+      Application.ProcessMessages;
+      dbPrincipal := TZConnection.create(nil);
+      dbPrincipal.HostName :=
+        'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+      dbPrincipal.LibraryLocation := 'libmySQL.dll';
+      dbPrincipal.user := 'cadmus182';
+      dbPrincipal.Port := 3306;
+      dbPrincipal.Password := 'cadmus182';
+      dbPrincipal.Database := 'mercurio';
+      dbPrincipal.Protocol := 'mysql-5';
+      dbPrincipal.Connect;
+      qryListaSmsEmail := TZQuery.create(nil);
+      qryListaSmsEmail.connection := dbPrincipal;
+      qryListaSmsEmail.SQL.Text := SQL;
+      qryListaSmsEmail.Open;
+      GerarExcel(qryListaSmsEmail);
     end;
 
     procedure TSms.btExportarPesquisaSatisfacaoClick(Sender: TObject);
     Var
       Texto: TextFile;
       Local: String;
+      dbPrincipal: TZConnection;
+      qryResultadoPesquisaSatisfacao: TZQuery;
     begin
-      with dmServidor do
+      ShowMessage('A Exportação Terá Inicio Aguarde a Mensagem de Conclusão');
+      Application.ProcessMessages;
+      dbPrincipal := TZConnection.create(nil);
+      dbPrincipal.HostName :=
+        'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+      dbPrincipal.LibraryLocation := 'libmySQL.dll';
+      dbPrincipal.user := 'cadmus182';
+      dbPrincipal.Port := 3306;
+      dbPrincipal.Password := 'cadmus182';
+      dbPrincipal.Database := 'mercurio';
+      dbPrincipal.Protocol := 'mysql-5';
+      dbPrincipal.Connect;
+      qryResultadoPesquisaSatisfacao := TZQuery.create(nil);
+      qryResultadoPesquisaSatisfacao.connection := dbPrincipal;
+      qryResultadoPesquisaSatisfacao.SQL.Text := SqlResultadoPesquisaSatisfacao
+        (FormatDateTime('dd/mm/yyyy',
+          Sms.dtpDataInicialPesquisaSatisfacao.Date),
+        FormatDateTime('dd/mm/yyyy',
+          Sms.dtpDataFinalPesquisaSatisfacao.Date + 1));
+      qryResultadoPesquisaSatisfacao.Open;
+      qryResultadoPesquisaSatisfacao.First;
+      sgSalvaTxt.Execute;
+      AssignFile(Texto, sgSalvaTxt.FileName + '.txt');
+      Rewrite(Texto);
+      Writeln(Texto, 'Resposta' + ';' + 'Qtde' + ';' + 'Percentual');
+      while not qryResultadoPesquisaSatisfacao.Eof do
       begin
-        ShowMessage('A Exportação Terá Inicio Aguarde a Mensagem de Conclusão');
-        qryResultadoPesquisaSatisfacao.First;
-        sgSalvaTxt.Execute;
-        AssignFile(Texto, sgSalvaTxt.FileName + '.txt');
-        Rewrite(Texto);
-        Writeln(Texto, 'Resposta' + ';' + 'Qtde' + ';' + 'Percentual');
-        while not qryResultadoPesquisaSatisfacao.Eof do
-        begin
-          Writeln(Texto, IntToStr(qryResultadoPesquisaSatisfacao['Resposta'])
-              + ';' + IntToStr(qryResultadoPesquisaSatisfacao['TotalResposta']
-              ) + ';' + FloatToStr(qryResultadoPesquisaSatisfacao['Percentual']
-              ));
-          qryResultadoPesquisaSatisfacao.Next;
-        end;
-        Writeln(Texto,
-          'Total de Respostas no Periodo ' + ';' + IntToStr
-            (qryResultadoPesquisaSatisfacao
-              ['TotalRespostas']));
-        CloseFile(Texto);
+        Writeln(Texto, IntToStr(qryResultadoPesquisaSatisfacao['Resposta'])
+            + ';' + IntToStr(qryResultadoPesquisaSatisfacao['TotalResposta'])
+            + ';' + FloatToStr(qryResultadoPesquisaSatisfacao['Percentual']));
+        qryResultadoPesquisaSatisfacao.Next;
       end;
+      Writeln(Texto,
+        'Total de Respostas no Periodo ' + ';' + IntToStr
+          (qryResultadoPesquisaSatisfacao
+            ['TotalRespostas']));
+      CloseFile(Texto);
     end;
 
     procedure TSms.btExportarArquivoTextoClick(Sender: TObject);
     Var
       Texto: TextFile;
       Local: String;
+      dbPrincipal: TZConnection;
+      qryListaSmsEmail: TZQuery;
+      Tipo: String;
+      SQL: String;
+      Data: String;
     begin
-      with dmServidor do
-      begin
-        ShowMessage('A Exportação Terá Inicio Aguarde a Mensagem de Conclusão');
-        qryListaSmsEmail.First;
-        sgSalvaTxt.Execute;
-        AssignFile(Texto, sgSalvaTxt.FileName + '.txt');
-        Rewrite(Texto);
-        Writeln(Texto, 'Cnpj' + ';' + 'Celular' + ';' + 'Mensagem' + ';' +
-            'Remetente' + ';' + 'Tipo' + ';' + 'Data' + ';' + 'Hora');
-        while not qryListaSmsEmail.Eof do
-        begin
-          Writeln(Texto,
-            qryListaSmsEmail['Cnpj'] + ';' + (qryListaSmsEmail['Celular'])
-              + ';' + (qryListaSmsEmail['Mensagem']) + ';' + VarToStr
-              (qryListaSmsEmail['Remetente']) + ';' + qryListaSmsEmail['Tipo']
-              + ';' + DateToStr(qryListaSmsEmail['Data']) + ';' + TimeToStr
-              (qryListaSmsEmail['Hora']));
-          qryListaSmsEmail.Next;
-        end;
-        CloseFile(Texto);
+      Data := DateToStr(clDatas.Date);
+      ShowMessage('A Exportação Terá Inicio Aguarde a Mensagem de Conclusão');
+      Case Sms.rgTipoListaEmailSms.ItemIndex of
+        0:
+          Tipo := '''E''';
+
+        1:
+          Tipo := '''S''';
+
+        2:
+          Tipo := ' ''S'',''E''';
+
       end;
+      if PeriodoPesquisaEnvios = 'Mes' then
+        SQL :=
+          'SELECT Cnpj,celular,Enviado,Mensagem,Remetente,Tipo,CodigoTextoEmail ,data,hora,id FROM `Enviados` ' + #13 + ' where Cnpj=' + '''' + Sms.edCnpj.Text + '''' + #13 + ' and Month(data)=' + 'Month(' + '''' + FormatDateTime('yyyy-mm-dd', StrToDate(Data)) + '''' + ')' + #13 + ' and Year(data)=' + 'Year(' + '''' + FormatDateTime('yyyy-mm-dd', StrToDate(Data)) + '''' + ') and Enviado=1 and Tipo in (' + Tipo + ')';
+      if PeriodoPesquisaEnvios = 'Periodo' then
+        SQL :=
+          'SELECT Cnpj,celular,Enviado,Mensagem,Remetente,Tipo,CodigoTextoEmail ,data,hora,id FROM `Enviados` ' + #13 + ' where Cnpj=' + '''' + Sms.edCnpj.Text + '''' + #13 + ' and (data)=' + '(' + '''' + FormatDateTime('yyyy-mm-dd', StrToDate(Data)) + '''' + ')' + #13 + ' and Enviado=1 and Tipo in (' + Tipo + ')';
+      // inputquery('','',Sql);
+      Application.ProcessMessages;
+      dbPrincipal := TZConnection.create(nil);
+      dbPrincipal.HostName :=
+        'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+      dbPrincipal.LibraryLocation := 'libmySQL.dll';
+      dbPrincipal.user := 'cadmus182';
+      dbPrincipal.Port := 3306;
+      dbPrincipal.Password := 'cadmus182';
+      dbPrincipal.Database := 'mercurio';
+      dbPrincipal.Protocol := 'mysql-5';
+      dbPrincipal.Connect;
+      qryListaSmsEmail := TZQuery.create(nil);
+      qryListaSmsEmail.connection := dbPrincipal;
+      qryListaSmsEmail.SQL.Text := SQL;
+      qryListaSmsEmail.Open;
+      sgSalvaTxt.Execute;
+      AssignFile(Texto, sgSalvaTxt.FileName + '.txt');
+      Rewrite(Texto);
+      Writeln(Texto, 'Cnpj' + ';' + 'Celular' + ';' + 'Mensagem' + ';' +
+          'Remetente' + ';' + 'Tipo' + ';' + 'Data' + ';' + 'Hora');
+      qryListaSmsEmail.First;
+      while not qryListaSmsEmail.Eof do
+      begin
+        Writeln(Texto,
+          qryListaSmsEmail['Cnpj'] + ';' + (qryListaSmsEmail['Celular'])
+            + ';' + (qryListaSmsEmail['Mensagem']) + ';' + VarToStr
+            (qryListaSmsEmail['Remetente']) + ';' + qryListaSmsEmail['Tipo']
+            + ';' + DateToStr(qryListaSmsEmail['Data']) + ';' + TimeToStr
+            (qryListaSmsEmail['Hora']));
+        qryListaSmsEmail.Next;
+      end;
+      CloseFile(Texto);
+      dbPrincipal.Destroy;
+      qryListaSmsEmail.Destroy;
       ShowMessage('Exportação Concluida');
     end;
 
@@ -9909,8 +9898,8 @@ end;
           end;
           if not EstaNaListaNegra(Email) then
           begin
-            InsereEmailCobranca(edEmail.Text, Email,
-              edTItuloEmailCobranca.Text, Identificacao);
+            InsereEmail(edEmail.Text, Email, edTItuloEmailCobranca.Text,
+              Identificacao);
           end;
           if not VerificaInternet then
           Begin
@@ -10606,54 +10595,6 @@ end;
       end;
     end;
 
-    procedure CarregaTextoAvisoVencimento(CodigoTexto: String);
-    begin
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryTextoEmail.Active := False;
-        qryTextoEmail.Active := true;
-        qryTextoEmail.Close;
-        qryTextoEmail.Params.ParamByName('Cnpj').Value := Sms.edCnpj.Text;
-        qryTextoEmail.Params.ParamByName('CodigoTexto').Value := CodigoTexto;
-        qryTextoEmail.Open;
-        if qryTextoEmail.RecordCount > 0 then
-          qryTextoEmail.Delete;
-        qryTextoEmail.Insert;
-        qryTextoEmail['CodigoTextoEmail'] := CodigoTexto;
-        qryTextoEmail['Cnpj'] := Sms.edCnpj.Text;
-        qryTextoEmail['Texto'] := TextoNaMemo(CodigoTexto + '.txt');
-        DeleteFile(CodigoTexto + '.txt');
-        qryTextoEmail.Post;
-        qryTextoEmail.ApplyUpdates();
-      end;
-    end;
-
-    procedure InsereEmailAvisoVencimento(EmailEnvio, EmailDestinatario, Titulo,
-      CodigoTexto: String);
-    Var
-      Arq: TextFile;
-    begin
-      CarregaTextoAvisoVencimento(CodigoTexto);
-      with dmServidor do
-      begin
-        Application.ProcessMessages;
-        qryAvisoVencimentoEmail.Active := False;
-        qryAvisoVencimentoEmail.Active := true;
-        qryAvisoVencimentoEmail.Active := true;
-        qryAvisoVencimentoEmail.Insert;
-        qryAvisoVencimentoEmail['Cnpj'] := Sms.edCnpj.Text;
-        qryAvisoVencimentoEmail['Remetente'] := EmailEnvio;
-        qryAvisoVencimentoEmail['celular'] := EmailDestinatario;
-        qryAvisoVencimentoEmail['Mensagem'] := Titulo;
-        qryAvisoVencimentoEmail['Tipo'] := 'E';
-        qryAvisoVencimentoEmail['CodigoTextoEmail'] := CodigoTexto;
-        qryAvisoVencimentoEmail['Enviado'] := '0';
-        qryAvisoVencimentoEmail.Post;
-        qryAvisoVencimentoEmail.ApplyUpdates();
-      end;
-    end;
-
     procedure TSms.btIniciaAvisoVencimentoEmailClick(Sender: TObject);
     var
       Contador: Integer;
@@ -10731,8 +10672,8 @@ end;
           end;
           if not EstaNaListaNegra(Email) then
           begin
-            InsereEmailAvisoVencimento(edEmail.Text, Email,
-              edTituloEmailAvisoVencimento.Text, Identificacao);
+            InsereEmail(edEmail.Text, Email, edTituloEmailAvisoVencimento.Text,
+              Identificacao);
           end;
           if not VerificaInternet then
           Begin
@@ -10889,27 +10830,70 @@ end;
     end;
 
     procedure ResetaSistema;
+    Var
+      dbPrincipal: TZConnection;
+      qryVerificaResete: TZQuery;
     begin
-      dmServidor.qryVerificaResete.Edit;
-      dmServidor.qryVerificaResete['Reseta'] := '';
-      dmServidor.qryVerificaResete.Post;
+      Application.ProcessMessages;
+      dbPrincipal := TZConnection.create(nil);
+      dbPrincipal.HostName :=
+        'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+      dbPrincipal.LibraryLocation := 'libmySQL.dll';
+      dbPrincipal.user := 'cadmus182';
+      dbPrincipal.Port := 3306;
+      dbPrincipal.Password := 'cadmus182';
+      dbPrincipal.Database := 'mercurio';
+      dbPrincipal.Protocol := 'mysql-5';
+      dbPrincipal.Connect;
+      qryVerificaResete := TZQuery.create(nil);
+      qryVerificaResete.connection := dbPrincipal;
+      qryVerificaResete.SQL.Text := 'Update' + #13 + '  Clientes ' + #13 +
+        'Set' + #13 + '  Reseta = ''N'' ' + #13 + 'where ' + #13 +
+        '  Cnpj=' + Sms.edCnpj.Text;
+      Try
+        qryVerificaResete.ExecSQL;
+        dbPrincipal.Disconnect;
+        dbPrincipal.Destroy;
+        qryVerificaResete.Destroy;
+      Except
+        dbPrincipal.Disconnect;
+        dbPrincipal.Destroy;
+        qryVerificaResete.Destroy;
+      End;
+
       WinExec('PSms.exe', SW_NORMAL);
       Application.Terminate;
     end;
 
     procedure VerificaResete;
+    Var
+      dbPrincipal: TZConnection;
+      qryVerificaResete: TZQuery;
     begin
+      Application.ProcessMessages;
+      dbPrincipal := TZConnection.create(nil);
+      dbPrincipal.HostName :=
+        'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com';
+      dbPrincipal.LibraryLocation := 'libmySQL.dll';
+      dbPrincipal.user := 'cadmus182';
+      dbPrincipal.Port := 3306;
+      dbPrincipal.Password := 'cadmus182';
+      dbPrincipal.Database := 'mercurio';
+      dbPrincipal.Protocol := 'mysql-5';
+      dbPrincipal.Connect;
+      qryVerificaResete := TZQuery.create(nil);
+      qryVerificaResete.connection := dbPrincipal;
+      qryVerificaResete.SQL.Text := 'Select   ' + #13 + 'Reseta ' + #13 +
+        'From     ' + #13 + 'Clientes ' + #13 + 'Where  ' + #13 + 'Cnpj =' +
+        Sms.edCnpj.Text;
+      qryVerificaResete.Open;
+      if qryVerificaResete.RecordCount > 0 then
+        if qryVerificaResete['Reseta'] = 'Sim' then
+          ResetaSistema;
 
-      With dmServidor do
-      begin
-        qryVerificaResete.Close;
-        qryVerificaResete.ParamByName('Cnpj').Value := Sms.edCnpj.Text;
-        qryVerificaResete.Open;
-        if qryVerificaResete.RecordCount > 0 then
-          if qryVerificaResete['Reseta'] = 'Sim' then
-            ResetaSistema;
-      end;
-
+      dbPrincipal.Disconnect;
+      dbPrincipal.Destroy;
+      qryVerificaResete.Destroy;
     end;
 
     procedure TSms.tVerificaReseteTimer(Sender: TObject);

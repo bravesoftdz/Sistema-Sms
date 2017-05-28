@@ -365,7 +365,7 @@
     Top = 81
     Width = 1320
     Height = 584
-    ActivePage = tsConfiguracao
+    ActivePage = tsPesquisaSatisfacao
     Align = alClient
     TabOrder = 2
     object tsListaEnvios: TTabSheet
@@ -449,7 +449,7 @@
               Top = 16
               Width = 191
               Height = 154
-              Date = 42053.971496724540000000
+              Date = 42053.620804884260000000
               TabOrder = 0
               OnClick = clDatasClick
             end
@@ -10043,6 +10043,7 @@
     end
   end
   object tVerifica: TTimer
+    Enabled = False
     Interval = 100
     OnTimer = tVerificaTimer
     Left = 1259
@@ -11342,12 +11343,10 @@
     end
   end
   object dsSmsRespondidos: TDataSource
-    DataSet = dmServidor.qrySmsRecebidos
     Left = 404
     Top = 455
   end
   object dsListaEmails: TDataSource
-    DataSet = dmServidor.qryListaSmsEmail
     Left = 204
     Top = 479
   end
@@ -11401,6 +11400,7 @@
     end
   end
   object tVerificaResete: TTimer
+    Enabled = False
     OnTimer = tVerificaReseteTimer
     Left = 85
     Top = 599
@@ -11463,6 +11463,7 @@
     Top = 599
   end
   object tVerificaRepostaPesquisa: TTimer
+    Enabled = False
     OnTimer = tVerificaRepostaPesquisaTimer
     Left = 1032
     Top = 599
@@ -11476,11 +11477,6 @@
     UseHOST = False
     Left = 376
     Top = 224
-  end
-  object ApplicationEvents1: TApplicationEvents
-    OnException = ApplicationEvents1Exception
-    Left = 1009
-    Top = 150
   end
   object Skin: TSkinData
     Active = True
@@ -11611,8 +11607,8 @@
     Version = '5.8.10.1'
     MenuUpdate = True
     MenuMerge = False
-    Left = 1052
-    Top = 153
+    Left = 868
+    Top = 257
     SkinStream = {
       51390100B4F20A00D676B1986078EC1832BF6EADD9D8C01FB7FD71FBC2FFEEBD
       DF9FE6672D6802015D6FFADCD9FC3EB2A0F960E5B564EF8D6D7DC4233AE66D60
@@ -14128,56 +14124,12 @@
     Top = 286
   end
   object dsResultadoPesquisaSatisfacao: TDataSource
-    DataSet = dmServidor.qryResultadoPesquisaSatisfacao
     Left = 952
     Top = 208
   end
-  object dbPrincipalu: TZConnection
-    ControlsCodePage = cGET_ACP
-    Properties.Strings = (
-      'AutoEncodeStrings=ON')
-    Connected = True
-    HostName = 'Cadmustech.cet2loe0ehxw.us-west-2.rds.amazonaws.com'
-    Port = 3306
-    Database = 'mercurio'
-    User = 'cadmus182'
-    Password = 'cadmus182'
-    Protocol = 'mysql-5'
-    LibraryLocation = 'libmySQL.dll'
-    Left = 58
-    Top = 10
-  end
-  object qryInsereSms: TZQuery
-    Connection = dbPrincipalu
-    SQL.Strings = (
-      'SELECT Cnpj,celular,Enviado,Mensagem,Tipo,id FROM `Enviados`'
-      'where 1=2 '
-      '')
-    Params = <>
-    Left = 778
-    Top = 72
-    object WideStringField1: TWideStringField
-      FieldName = 'Cnpj'
-      Size = 40
-    end
-    object WideStringField2: TWideStringField
-      FieldName = 'celular'
-      Size = 80
-    end
-    object IntegerField1: TIntegerField
-      FieldName = 'Enviado'
-    end
-    object WideStringField3: TWideStringField
-      FieldName = 'Mensagem'
-      Size = 180
-    end
-    object WideStringField4: TWideStringField
-      FieldName = 'Tipo'
-      Size = 1
-    end
-    object IntegerField2: TIntegerField
-      FieldName = 'id'
-      Required = True
-    end
+  object apEvents: TApplicationEvents
+    OnException = apEventsException
+    Left = 936
+    Top = 16
   end
 end

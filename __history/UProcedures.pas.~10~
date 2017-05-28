@@ -1,0 +1,146 @@
+unit UProcedures;
+
+
+
+interface
+
+uses
+    Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ComCtrls, StdCtrls, Buttons, Mask, DBCtrls, DB,Shellapi,
+  IdBaseComponent, IdComponent,
+  IdFTP, Grids, DBGrids, ExtCtrls,WinInet,DateUtils, IdTCPConnection,
+  IdTCPClient, WinSkinStore, WinSkinData, ADODB, RpCon, RpConDS, RpDefine,
+  RpRave, AppEvnts, Menus, StrUtils, IdMessageClient, IdSMTP,
+  IdIOHandler, IdIOHandlerSocket, IdSSLOpenSSL, IdMessage,
+  IdAntiFreezeBase, IdAntiFreeze,Registry, OleCtrls, SHDocVw,ActiveX,
+  DBXpress, SqlExpr, Provider, ExcelXP, OleServer,ComObj,
+  ZAbstractConnection, ZConnection, ZSqlUpdate, ZAbstractRODataset,
+  ZAbstractDataset, ZDataset,Excel2000;
+
+
+
+
+procedure EnviaEmailControle(Cnpj,Titulo,EmailDestinatario,EmailRemetente,CodigoTexto,Identificacao,Inicio,Data : String);
+
+function MessageBoxTimer(const AMsg, ATitle: string; DlgType: TMsgDlgType;
+Buttons: TMsgDlgButtons; MSecs: Cardinal = 0;
+ShowProgressBar: Boolean = true): integer;
+
+
+implementation
+
+uses dmuServidor, ComServ;
+
+
+Function VerificaSeJaEnviadoHoje(Celular,Mensagem,Cnpj : String) : Boolean;
+begin
+  with dmServidor do
+  begin
+    qryNaoRepetirSms.Close;
+    qryNaoRepetirSms.ParamByName('Celular').Value:= Celular ;
+    qryNaoRepetirSms.ParamByName('Mensagem').Value:= Mensagem ;
+    qryNaoRepetirSms.ParamByName('Cnpj').Value:= Cnpj ;
+    qryNaoRepetirSms.Open;
+    if qryNaoRepetirSms.RecordCount > 0 then
+      Result := True
+    else
+      Result := False;
+  end;
+end;
+
+function MessageBoxTimer(const AMsg, ATitle: string; DlgType: TMsgDlgType;
+Buttons: TMsgDlgButtons; MSecs: Cardinal = 0;
+ShowProgressBar: Boolean = true): integer;
+
+
+var
+  lMsgDialog: TForm;
+  lTimerMethod: TNotifyEvent;
+
+  procedure UpdateProgressBar(Data: Pointer; Sender: TObject);
+  var
+    lForm: TForm;
+    lProgressBar: TProgressBar;
+  begin
+    if Sender is TTimer then
+      if TTimer(Sender).Owner is TForm then
+      begin
+        lForm := TForm(TTimer(Sender).Owner);
+        lProgressBar := TProgressBar(lForm.FindComponent('ProgressBar'));
+        if Assigned(lProgressBar) then
+          if lProgressBar.Position + 1 < lProgressBar.Max then
+            lProgressBar.StepIt
+          else
+            lForm.ModalResult := mrCancel;
+      end;
+  end;
+
+  procedure TranslateCaptionButtons;
+  const
+    AButtonNames: array[TMsgDlgBtn] of string = (
+      'YES', 'NO', 'OK', 'CANCEL', 'ABORT', 'RETRY', 'IGNORE',
+      'ALL', 'NOTOALL','YESTOALL', 'HELP','ddd');
+    AButtonCaptions: array[TMsgDlgBtn] of string = (
+      'Sim', 'Não', 'Ok', 'Cancelar', 'Abortar', 'Retentar', 'Ignorar',
+      'Tudo', 'Não a Tudo', 'Sim a Tudo', 'Ajuda','Fechar');
+  var
+    lBtnType: TMsgDlgBtn;
+    lButton: TButton;
+  begin
+    for lBtnType := Low(TMsgDlgBtn) to High(TMsgDlgBtn) do
+    begin
+      lButton := TButton(lMsgDialog.FindComponent(AButtonNames[lBtnType]));
+      if Assigned(lButton) then
+        lButton.Caption := AButtonCaptions[lBtnType];
+    end;
+  end;
+
+begin
+  //  Cria a caixa de diálogo
+  lMsgDialog := CreateMessageDialog(AMsg, DlgType, Buttons);
+  lMsgDialog.Caption := ATitle;
+
+  //  Traduz botões existentes no diálogo
+  TranslateCaptionButtons;
+
+  //  Checa se será necessário uma barra de progresso
+  if MSecs> 0 then
+  begin
+    with TProgressBar.Create(lMsgDialog) do
+    begin
+      Name := 'ProgressBar';
+      Parent := lMsgDialog;
+      Align := alBottom;
+      Max := MSecs div 1000;
+      Min := 0;
+      Step := 1;
+      Position := 0;
+      Visible := ShowProgressBar;
+    end;
+    lMsgDialog.Height := lMsgDialog.Height + (Ord(ShowProgressBar) * 20);
+    with TTimer.Create(lMsgDialog) do
+    begin
+      Name := 'MsgTimer';
+      Interval := 1000;
+    end;
+
+    //  Cria o timer, usando uma rotina 'solta' (stand-alone, desvinculada de
+    //  uma instância de objeto) para fazer o trabalho de atualização da barra
+    //  de progressão (caso exista) e também o tempo que será contado para
+    //  fechar a janela
+    TMethod(lTimerMethod).Code := Addr(UpdateProgressBar);
+    TMethod(lTimerMethod).Data := lMsgDialog.FindComponent('MsgTimer');
+    TTimer(lMsgDialog.FindComponent('MsgTimer')).OnTimer := lTimerMethod;
+  end;
+
+  try
+    //  Chama a caixa de diálogo e verifica o seu retorno
+    Result := lMsgDialog.ShowModal;
+  finally
+    lMsgDialog.Free;
+  end;
+end;
+
+
+
+end.
